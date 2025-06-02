@@ -11,7 +11,9 @@ def predict_qr_for_time_block(hour_block, date=None):
     if date is None:
         date = datetime.now()
     date_part = date.strftime("%m%d%Y")  # Dynamic date
-    time_block = f"{hour_block:02d}0001"  # Changed suffix to 0001 based on real data
+    # Only 00:00-01:59 block uses 0001 suffix, rest use 0000
+    suffix = "0001" if hour_block == 0 else "0000"
+    time_block = f"{hour_block:02d}{suffix}"
     return member_id + date_part + time_block
 
 if __name__ == "__main__":
@@ -33,9 +35,10 @@ if __name__ == "__main__":
     # Check if we have this exact pattern (updated for dynamic dates)
     # Note: These are June 1st patterns, may not match current date
     real_patterns = {
-        "926806012025060001": "202506010748.svg",
-        "926806012025080001": "202506010806.svg", 
-        "926806012025100001": "202506011003.svg"
+        "926806012025000001": "202506010144.svg",  # 00:00-01:59 uses 0001
+        "926806012025060000": "202506010748.svg",  # 06:00-07:59 uses 0000
+        "926806012025080000": "202506010806.svg",  # 08:00-09:59 uses 0000
+        "926806012025100000": "202506011003.svg"   # 10:00-11:59 uses 0000
     }
     
     if current_predicted in real_patterns:
