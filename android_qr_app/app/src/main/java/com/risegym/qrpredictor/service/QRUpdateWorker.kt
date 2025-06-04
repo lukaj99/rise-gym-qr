@@ -54,7 +54,7 @@ class QRUpdateWorker(
                 .setConstraints(constraints)
                 .setBackoffCriteria(
                     BackoffPolicy.LINEAR,
-                    PeriodicWorkRequest.MIN_BACKOFF_MILLIS,
+                    60000L, // 1 minute backoff
                     TimeUnit.MILLISECONDS
                 )
                 .addTag(WORK_NAME)

@@ -638,6 +638,6 @@ fun QRPredictorScreen(onLogout: () -> Unit) {
 @Composable
 fun QRPredictorScreenPreview() {
     RiseGymQRPredictorTheme {
-        QRPredictorScreen()
+        QRPredictorScreen(onLogout = {})
     }
 }

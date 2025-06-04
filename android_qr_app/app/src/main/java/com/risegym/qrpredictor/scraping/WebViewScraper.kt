@@ -212,7 +212,7 @@ class WebViewScraper(private val context: Context) : WebScraperInterface {
     
     override suspend fun isSessionValid(): Boolean = withContext(Dispatchers.Main) {
         val cookies = cookieManager.getCookie(DASHBOARD_URL)
-        return !cookies.isNullOrEmpty()
+        !cookies.isNullOrEmpty()
     }
     
     override suspend fun clearSession() {

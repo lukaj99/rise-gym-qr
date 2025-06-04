@@ -95,7 +95,7 @@ class HybridQRFetcher(private val context: Context) {
             try {
                 Log.d(TAG, "Attempting WebView scraping...")
                 
-                withContext(Dispatchers.Main) {
+                val webViewResult = withContext(Dispatchers.Main) {
                     // Login if needed
                     if (!webViewScraper.isSessionValid()) {
                         val loginSuccess = webViewScraper.login(credentials!!)
@@ -104,12 +104,13 @@ class HybridQRFetcher(private val context: Context) {
                         }
                     }
                     
-                    val webViewResult = webViewScraper.fetchQRCode()
-                    if (webViewResult.success) {
-                        Log.d(TAG, "WebView scraping successful")
-                        cacheResult(webViewResult)
-                        return@withContext webViewResult
-                    }
+                    webViewScraper.fetchQRCode()
+                }
+                
+                if (webViewResult.success) {
+                    Log.d(TAG, "WebView scraping successful")
+                    cacheResult(webViewResult)
+                    return@withContext webViewResult
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "WebView scraping failed", e)
