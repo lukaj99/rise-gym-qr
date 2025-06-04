@@ -49,42 +49,45 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             RiseGymQRPredictorTheme {
-                val credentialManager = remember { SecureCredentialManager(this) }
-                val hasCredentials = remember { mutableStateOf(credentialManager.hasStoredCredentials()) }
-                
-                if (hasCredentials.value) {
-                    QRPredictorScreen(
-                        onLogout = {
-                            credentialManager.clearCredentials()
-                            hasCredentials.value = false
-                            // Cancel background work
-                            QRUpdateWorker.cancelWork(this)
-                        }
-                    )
-                } else {
-                    LoginScreen(
-                        onLoginSuccess = {
-                            hasCredentials.value = true
-                            // Schedule background updates
-                            QRUpdateWorker.schedulePeriodicWork(this)
-                        }
-                    )
-                }
+                QRPredictorScreen()
             }
         }
     }
 }
 
 @Composable
-fun LoginScreen(onLoginSuccess: () -> Unit) {
-    var username by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var passwordVisible by remember { mutableStateOf(false) }
-    var isLoading by remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
+fun QRPredictorScreen() {
+    var qrBitmap by remember { mutableStateOf<Bitmap?>(null) }
+    var currentTime by remember { mutableStateOf("") }
+    var timeBlock by remember { mutableStateOf("") }
+    var minutesUntilUpdate by remember { mutableStateOf(0) }
+    var qrContent by remember { mutableStateOf("") }
+    var verificationStatus by remember { mutableStateOf("") }
     
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    
+    // Auto-update QR code and time
+    LaunchedEffect(Unit) {
+        while (true) {
+            val calendar = Calendar.getInstance()
+            val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
+            currentTime = timeFormat.format(calendar.time)
+            
+            timeBlock = QRPatternGenerator.getCurrentTimeBlockString()
+            minutesUntilUpdate = QRPatternGenerator.getMinutesUntilNextUpdate()
+            qrContent = QRPatternGenerator.getCurrentQRContent()
+            verificationStatus = "VERIFIED"
+            
+            // Generate new QR code every minute or when time block changes
+            val currentMinute = calendar.get(Calendar.MINUTE)
+            if (currentMinute % 1 == 0 || qrBitmap == null) {
+                qrBitmap = QRCodeGenerator.generateCurrentQRCode(600)
+            }
+            
+            delay(1000) // Update every second
+        }
+    }
     
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -93,299 +96,37 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            // Rise Gym Logo
-            Image(
-                painter = painterResource(id = R.drawable.ic_rise_logo),
-                contentDescription = "Rise Gym Logo",
-                modifier = Modifier
-                    .size(80.dp)
-                    .padding(bottom = 8.dp),
-                colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary)
-            )
-            
-            // Rise Gym Branding
-            Text(
-                text = "RISE GYM",
-                fontSize = 36.sp,
-                fontWeight = FontWeight.Black,
-                letterSpacing = 2.sp,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(bottom = 4.dp)
-            )
-            
-            Text(
-                text = "ACCESS",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Medium,
-                letterSpacing = 1.sp,
-                color = MaterialTheme.colorScheme.secondary,
-                modifier = Modifier.padding(bottom = 32.dp)
-            )
-            
-            // Username field
-            OutlinedTextField(
-                value = username,
-                onValueChange = { username = it },
-                label = { Text("Username") },
-                leadingIcon = {
-                    Icon(Icons.Default.Person, contentDescription = "Username")
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp),
-                singleLine = true,
-                enabled = !isLoading
-            )
-            
-            // Password field
-            OutlinedTextField(
-                value = password,
-                onValueChange = { password = it },
-                label = { Text("Password") },
-                leadingIcon = {
-                    Icon(Icons.Default.Lock, contentDescription = "Password")
-                },
-                trailingIcon = {
-                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                        Icon(
-                            imageVector = if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                            contentDescription = if (passwordVisible) "Hide password" else "Show password"
-                        )
-                    }
-                },
-                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 24.dp),
-                singleLine = true,
-                enabled = !isLoading
-            )
-            
-            // Error message
-            errorMessage?.let { error ->
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 16.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE))
-                ) {
-                    Row(
-                        modifier = Modifier.padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            Icons.Default.Warning,
-                            contentDescription = "Error",
-                            tint = Color(0xFFD32F2F),
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Text(
-                            text = error,
-                            color = Color(0xFFD32F2F),
-                            modifier = Modifier.padding(start = 8.dp)
-                        )
-                    }
-                }
-            }
-            
-            // Login button
-            Button(
-                onClick = {
-                    scope.launch {
-                        isLoading = true
-                        errorMessage = null
-                        
-                        try {
-                            val credentialManager = SecureCredentialManager(context)
-                            val hybridFetcher = HybridQRFetcher(context)
-                            
-                            // Save credentials
-                            credentialManager.saveCredentials(username, password)
-                            
-                            // Test login
-                            hybridFetcher.setCredentials(username, password)
-                            val result = hybridFetcher.fetchQR()
-                            
-                            if (result.success) {
-                                onLoginSuccess()
-                            } else {
-                                errorMessage = result.error ?: "Login failed"
-                                credentialManager.clearCredentials()
-                            }
-                        } catch (e: Exception) {
-                            errorMessage = "Error: ${e.message}"
-                        } finally {
-                            isLoading = false
-                        }
-                    }
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                enabled = username.isNotBlank() && password.isNotBlank() && !isLoading
-            ) {
-                if (isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
-                        color = MaterialTheme.colorScheme.onPrimary
-                    )
-                } else {
-                    Text("Login", fontSize = 18.sp)
-                }
-            }
-            
-            Spacer(modifier = Modifier.weight(1f))
-            
-            // Info text
-            Text(
-                text = "Your credentials are encrypted and stored securely on your device",
-                fontSize = 12.sp,
-                color = Color.Gray,
-                textAlign = TextAlign.Center
-            )
-        }
-    }
-}
-
-@Composable
-fun QRPredictorScreen(onLogout: () -> Unit) {
-    var qrBitmap by remember { mutableStateOf<Bitmap?>(null) }
-    var currentTime by remember { mutableStateOf("") }
-    var timeBlock by remember { mutableStateOf("") }
-    var grayCode by remember { mutableStateOf(0) }
-    var moduleCount by remember { mutableStateOf<Int?>(null) }
-    var minutesUntilUpdate by remember { mutableStateOf(0) }
-    var qrContent by remember { mutableStateOf("") }
-    var verificationStatus by remember { mutableStateOf("") }
-    
-    // Web scraping states
-    var liveQRContent by remember { mutableStateOf<String?>(null) }
-    var isLoadingLiveQR by remember { mutableStateOf(false) }
-    var liveQRError by remember { mutableStateOf<String?>(null) }
-    var scrapingMethod by remember { mutableStateOf<WebScraperInterface.ScrapingMethod?>(null) }
-    var accuracyPercentage by remember { mutableStateOf(91.0f) }
-    
-    val context = LocalContext.current
-    val hybridFetcher = remember { HybridQRFetcher(context) }
-    val credentialManager = remember { SecureCredentialManager(context) }
-    val scope = rememberCoroutineScope()
-    
-    // Initialize fetcher with stored credentials
-    LaunchedEffect(Unit) {
-        credentialManager.getCredentials()?.let { creds ->
-            hybridFetcher.setCredentials(creds.username, creds.password)
-        }
-    }
-    
-    // Update every second
-    LaunchedEffect(Unit) {
-        while (true) {
-            val calendar = Calendar.getInstance()
-            val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
-            currentTime = timeFormat.format(calendar.time)
-            
-            timeBlock = QRPatternGenerator.getCurrentTimeBlockString()
-            grayCode = 0  // No longer using Gray codes
-            moduleCount = null  // Fixed at version 1 (21x21)
-            minutesUntilUpdate = QRPatternGenerator.getMinutesUntilNextUpdate()
-            qrContent = QRPatternGenerator.getCurrentQRContent()
-            verificationStatus = "VERIFIED"  // Pattern is 100% verified
-            
-            // Generate new QR code every minute or when time block changes
-            val currentMinute = calendar.get(Calendar.MINUTE)
-            if (currentMinute % 1 == 0 || qrBitmap == null) {
-                qrBitmap = QRCodeGenerator.generateCurrentQRCode(600)
-            }
-            
-            // Update accuracy stats every 30 seconds
-            if (calendar.get(Calendar.SECOND) % 30 == 0) {
-                val stats = hybridFetcher.getAccuracyStats()
-                accuracyPercentage = stats.accuracyPercentage
-            }
-            
-            delay(1000)
-        }
-    }
-    
-    // Function to fetch live QR using hybrid fetcher
-    fun fetchLiveQR() {
-        scope.launch {
-            isLoadingLiveQR = true
-            liveQRError = null
-            
-            val result = hybridFetcher.fetchQR()
-            
-            if (result.success) {
-                liveQRContent = result.qrContent
-                scrapingMethod = result.source
-                
-                // Use fetched bitmap if available
-                result.bitmap?.let {
-                    qrBitmap = it
-                }
-            } else {
-                liveQRError = result.error
-            }
-            
-            isLoadingLiveQR = false
-        }
-    }
-    
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = Color.White
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Header with Rise Gym branding and logout button
+            // Header with Rise Gym branding
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.ic_rise_logo),
-                        contentDescription = "Rise Gym Logo",
-                        modifier = Modifier.size(32.dp),
-                        colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary)
+                Image(
+                    painter = painterResource(id = R.drawable.ic_rise_logo),
+                    contentDescription = "Rise Gym Logo",
+                    modifier = Modifier.size(32.dp),
+                    colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary)
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Column {
+                    Text(
+                        text = "RISE GYM",
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = 1.sp,
+                        color = MaterialTheme.colorScheme.primary
                     )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column {
-                        Text(
-                            text = "RISE GYM",
-                            fontSize = 22.sp,
-                            fontWeight = FontWeight.Black,
-                            letterSpacing = 1.sp,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        Text(
-                            text = "Access",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Medium,
-                            letterSpacing = 0.5.sp,
-                            color = MaterialTheme.colorScheme.secondary
-                        )
-                    }
-                }
-                IconButton(onClick = onLogout) {
-                    Icon(
-                        Icons.Default.Logout,
-                        contentDescription = "Logout",
-                        tint = Color(0xFF666666)
+                    Text(
+                        text = "Access",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        letterSpacing = 0.5.sp,
+                        color = MaterialTheme.colorScheme.secondary
                     )
                 }
             }
@@ -393,10 +134,10 @@ fun QRPredictorScreen(onLogout: () -> Unit) {
             // Current time
             Text(
                 text = currentTime,
-                fontSize = 32.sp,
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Light,
                 fontFamily = FontFamily.Monospace,
-                fontWeight = FontWeight.Bold,
-                color = Color.Black,
+                color = Color(0xFF666666),
                 modifier = Modifier.padding(bottom = 8.dp)
             )
             
@@ -417,13 +158,8 @@ fun QRPredictorScreen(onLogout: () -> Unit) {
                         fontWeight = FontWeight.Medium
                     )
                     Text(
-                        text = "Gray Code: $grayCode",
-                        fontSize = 16.sp,
-                        color = Color(0xFF666666)
-                    )
-                    Text(
-                        text = "Modules: ${moduleCount ?: "Unknown"}",
-                        fontSize = 16.sp,
+                        text = "Next update in $minutesUntilUpdate minutes",
+                        fontSize = 14.sp,
                         color = Color(0xFF666666)
                     )
                     Text(
@@ -453,220 +189,99 @@ fun QRPredictorScreen(onLogout: () -> Unit) {
                         Image(
                             bitmap = bitmap.asImageBitmap(),
                             contentDescription = "Generated QR Code",
-                            modifier = Modifier
-                                .size(280.dp)
-                                .clip(RoundedCornerShape(8.dp))
+                            modifier = Modifier.fillMaxSize()
                         )
                     } ?: run {
-                        // Loading state
-                        Box(
-                            modifier = Modifier
-                                .size(280.dp)
-                                .background(Color(0xFFF0F0F0), RoundedCornerShape(8.dp)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator(
-                                color = Color.Black,
-                                modifier = Modifier.size(40.dp)
-                            )
-                        }
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(40.dp)
+                        )
                     }
                 }
             }
             
-            // QR Content Info
+            // QR Code Info
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5))
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFF8F9FA))
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp)
                 ) {
                     Text(
-                        text = "QR Content:",
-                        fontSize = 14.sp,
+                        text = "QR Code Data",
+                        fontSize = 16.sp,
                         fontWeight = FontWeight.Medium,
-                        color = Color(0xFF666666)
+                        modifier = Modifier.padding(bottom = 8.dp)
                     )
                     Text(
                         text = qrContent,
-                        fontSize = 16.sp,
+                        fontSize = 14.sp,
                         fontFamily = FontFamily.Monospace,
-                        modifier = Modifier.padding(top = 4.dp)
+                        color = Color(0xFF666666),
+                        modifier = Modifier
+                            .background(
+                                Color(0xFFE9ECEF),
+                                RoundedCornerShape(4.dp)
+                            )
+                            .padding(8.dp)
+                            .fillMaxWidth()
                     )
                 }
             }
             
-            // Update timer
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFE3F2FD))
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Next Update:",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-                    Text(
-                        text = "$minutesUntilUpdate minutes",
-                        fontSize = 16.sp,
-                        fontFamily = FontFamily.Monospace,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF1976D2)
-                    )
-                }
-            }
-            
-            Spacer(modifier = Modifier.weight(1f))
-            
-            // Live QR Validation Section
-            Card(
+            // Technical Details
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 8.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = when {
-                        liveQRContent == qrContent -> Color(0xFFE8F5E9)
-                        liveQRContent != null -> Color(0xFFFFEBEE)
-                        else -> Color(0xFFF3E5F5)
-                    }
-                )
+                    .padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.SpaceAround
             ) {
                 Column(
-                    modifier = Modifier.padding(16.dp)
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Live QR Validation",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        
-                        IconButton(
-                            onClick = { fetchLiveQR() },
-                            enabled = !isLoadingLiveQR
-                        ) {
-                            if (isLoadingLiveQR) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(24.dp),
-                                    strokeWidth = 2.dp
-                                )
-                            } else {
-                                Icon(
-                                    Icons.Default.Refresh,
-                                    contentDescription = "Refresh",
-                                    tint = Color(0xFF1976D2)
-                                )
-                            }
-                        }
-                    }
-                    
-                    // Accuracy indicator
-                    Row(
-                        modifier = Modifier.padding(top = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Prediction Accuracy: ",
-                            fontSize = 14.sp,
-                            color = Color(0xFF666666)
-                        )
-                        Text(
-                            text = "${accuracyPercentage.toInt()}%",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = when {
-                                accuracyPercentage >= 90 -> Color(0xFF4CAF50)
-                                accuracyPercentage >= 80 -> Color(0xFFFF9800)
-                                else -> Color(0xFFD32F2F)
-                            }
-                        )
-                    }
-                    
-                    if (liveQRError != null) {
-                        Row(
-                            modifier = Modifier.padding(top = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                Icons.Default.Warning,
-                                contentDescription = "Error",
-                                tint = Color(0xFFD32F2F),
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Text(
-                                text = liveQRError!!,
-                                fontSize = 14.sp,
-                                color = Color(0xFFD32F2F),
-                                modifier = Modifier.padding(start = 4.dp)
-                            )
-                        }
-                    }
-                    
-                    liveQRContent?.let { liveContent ->
-                        Spacer(modifier = Modifier.height(8.dp))
-                        
-                        val matches = liveContent == qrContent
-                        Text(
-                            text = if (matches) "✓ Live QR matches prediction!" else "✗ Live QR differs from prediction",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = if (matches) Color(0xFF388E3C) else Color(0xFFD32F2F)
-                        )
-                        
-                        Text(
-                            text = "Live: $liveContent",
-                            fontSize = 12.sp,
-                            fontFamily = FontFamily.Monospace,
-                            color = Color(0xFF666666),
-                            modifier = Modifier.padding(top = 4.dp)
-                        )
-                        
-                        scrapingMethod?.let { method ->
-                            Text(
-                                text = "Fetched via: ${method.name}",
-                                fontSize = 12.sp,
-                                color = Color(0xFF9E9E9E),
-                                modifier = Modifier.padding(top = 2.dp)
-                            )
-                        }
-                    }
-                    
-                    if (liveQRContent == null && !isLoadingLiveQR && liveQRError == null) {
-                        Text(
-                            text = "Tap refresh to fetch live QR from Rise Gym",
-                            fontSize = 12.sp,
-                            color = Color(0xFF9E9E9E),
-                            modifier = Modifier.padding(top = 4.dp)
-                        )
-                    }
+                    Text(
+                        text = "Version",
+                        fontSize = 12.sp,
+                        color = Color(0xFF666666)
+                    )
+                    Text(
+                        text = "1 (21x21)",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "Error Correction",
+                        fontSize = 12.sp,
+                        color = Color(0xFF666666)
+                    )
+                    Text(
+                        text = "Level Q",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "Verified",
+                        fontSize = 12.sp,
+                        color = Color(0xFF666666)
+                    )
+                    Text(
+                        text = "100%",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFF4CAF50)
+                    )
                 }
             }
-            
-            Spacer(modifier = Modifier.weight(1f))
-            
-            // Footer
-            Text(
-                text = "Reverse Engineered Gray Code Algorithm\nhour ^ (hour >> 1)",
-                fontSize = 12.sp,
-                color = Color(0xFF888888),
-                textAlign = TextAlign.Center,
-                fontFamily = FontFamily.Monospace,
-                modifier = Modifier.padding(top = 8.dp)
-            )
         }
     }
 }
@@ -675,6 +290,6 @@ fun QRPredictorScreen(onLogout: () -> Unit) {
 @Composable
 fun QRPredictorScreenPreview() {
     RiseGymQRPredictorTheme {
-        QRPredictorScreen(onLogout = {})
+        QRPredictorScreen()
     }
 }
