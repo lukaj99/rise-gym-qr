@@ -1,0 +1,14 @@
+{
+  "analysis_results": [
+    {
+      "filename": "202506010144",
+      "svg_path": "real_qr_codes/202506010144.svg",
+      "png_extracted_path": "/tmp/202506010144_extracted.png",
+      "image_analysis": {
+        "image_size": [
+          1200,
+          1200
+        ],
+        "qr_bounds": {
+          "top_left": [
+            

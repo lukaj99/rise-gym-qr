@@ -1,0 +1,12 @@
+requests
+beautifulsoup4
+selenium
+python-dotenv
+pillow
+qrcode[pil]
+opencv-python
+playwright>=1.40.0
+undetected-chromedriver>=3.5.0
+pyzbar
+cairosvg
+python-zxing

@@ -1,0 +1,35 @@
+{
+  "version": "1.0",
+  "extracted_date": "2025-06-04",
+  "qr_structure": {
+    "facility": {
+      "value": "9268",
+      "description": "Member ID/facility code"
+    },
+    "date": {
+      "format": "MMDDYYYY",
+      "description": "Current date"
+    },
+    "time_slot": {
+      "format": "HH",
+      "description": "2-hour time block (00,02,04,06,08,10,12,14,16,18,20,22)"
+    },
+    "suffix": {
+      "format": "SSSS",
+      "description": "0001 for 00:00-01:59, 0000 for all other slots"
+    }
+  },
+  "time_encoding": {
+    "type": "2hour_slots",
+    "description": "Hour divided by 2, with special suffix rules"
+  },
+  "generation_rules": {
+    "date_format": "MMDDYYYY",
+    "validation_pattern": "^9268\\d{8}\\d{2}(0000|0001)$",
+    "slot_calculation": "hour // 2 * 2",
+    "suffix_rules": {
+      "00:00-01:59": "0001",
+      "02:00-23:59": "0000"
+    }
+  }
+}

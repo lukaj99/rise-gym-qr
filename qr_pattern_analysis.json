@@ -1,0 +1,1447 @@
+{
+  "metadata": {
+    "analyzed_at": "2025-06-04T23:37:06.977014",
+    "total_files": 47
+  },
+  "pattern_summary": {
+    "format": "9268 + MMDDYYYY + HHMMSS",
+    "encryption": "None - plaintext data",
+    "time_encoding": "2-hour slots with suffix",
+    "special_cases": {
+      "00:00-01:59": "Uses suffix 0001",
+      "other_slots": "Use suffix 0000"
+    }
+  },
+  "cross_patterns": {
+    "time_slots": {
+      "00": 2,
+      "06": 5,
+      "08": 20,
+      "10": 17,
+      "20": 1,
+      "18": 1,
+      "22": 1
+    },
+    "suffixes": {
+      "0001": 2,
+      "0000": 45
+    },
+    "date_range": {
+      "min": "06012025",
+      "max": "06042025"
+    }
+  },
+  "detailed_analyses": [
+    {
+      "data": "926806012025000001",
+      "length": 18,
+      "components": {
+        "facility": "9268",
+        "date": "06012025",
+        "time": "000001",
+        "date_formatted": "06/01/2025",
+        "time_slot": "00:00-01:59"
+      },
+      "analysis": {
+        "time_pattern": {
+          "hour": "00",
+          "suffix": "0001",
+          "is_special_slot": true
+        },
+        "character_frequency": {
+          "0": 8,
+          "2": 3,
+          "6": 2,
+          "1": 2,
+          "9": 1,
+          "8": 1,
+          "5": 1
+        },
+        "entropy": 2.3502,
+        "md5": "c50348f9877437f96076442109c1b9f3"
+      },
+      "filename": "202506010144.svg"
+    },
+    {
+      "data": "926806012025060000",
+      "length": 18,
+      "components": {
+        "facility": "9268",
+        "date": "06012025",
+        "time": "060000",
+        "date_formatted": "06/01/2025",
+        "time_slot": "06:00-07:59"
+      },
+      "analysis": {
+        "time_pattern": {
+          "hour": "06",
+          "suffix": "0000",
+          "is_special_slot": false
+        },
+        "character_frequency": {
+          "0": 8,
+          "2": 3,
+          "6": 3,
+          "9": 1,
+          "8": 1,
+          "1": 1,
+          "5": 1
+        },
+        "entropy": 2.3083,
+        "md5": "241a90dd47981d33bdd9862325e5ac6c"
+      },
+      "filename": "202506010748.svg"
+    },
+    {
+      "data": "926806012025060000",
+      "length": 18,
+      "components": {
+        "facility": "9268",
+        "date": "06012025",
+        "time": "060000",
+        "date_formatted": "06/01/2025",
+        "time_slot": "06:00-07:59"
+      },
+      "analysis": {
+        "time_pattern": {
+          "hour": "06",
+          "suffix": "0000",
+          "is_special_slot": false
+        },
+        "character_frequency": {
+          "0": 8,
+          "2": 3,
+          "6": 3,
+          "9": 1,
+          "8": 1,
+          "1": 1,
+          "5": 1
+        },
+        "entropy": 2.3083,
+        "md5": "241a90dd47981d33bdd9862325e5ac6c"
+      },
+      "filename": "202506010749.svg"
+    },
+    {
+      "data": "926806012025060000",
+      "length": 18,
+      "components": {
+        "facility": "9268",
+        "date": "06012025",
+        "time": "060000",
+        "date_formatted": "06/01/2025",
+        "time_slot": "06:00-07:59"
+      },
+      "analysis": {
+        "time_pattern": {
+          "hour": "06",
+          "suffix": "0000",
+          "is_special_slot": false
+        },
+        "character_frequency": {
+          "0": 8,
+          "2": 3,
+          "6": 3,
+          "9": 1,
+          "8": 1,
+          "1": 1,
+          "5": 1
+        },
+        "entropy": 2.3083,
+        "md5": "241a90dd47981d33bdd9862325e5ac6c"
+      },
+      "filename": "202506010750.svg"
+    },
+    {
+      "data": "926806012025060000",
+      "length": 18,
+      "components": {
+        "facility": "9268",
+        "date": "06012025",
+        "time": "060000",
+        "date_formatted": "06/01/2025",
+        "time_slot": "06:00-07:59"
+      },
+      "analysis": {
+        "time_pattern": {
+          "hour": "06",
+          "suffix": "0000",
+          "is_special_slot": false
+        },
+        "character_frequency": {
+          "0": 8,
+          "2": 3,
+          "6": 3,
+          "9": 1,
+          "8": 1,
+          "1": 1,
+          "5": 1
+        },
+        "entropy": 2.3083,
+        "md5": "241a90dd47981d33bdd9862325e5ac6c"
+      },
+      "filename": "202506010751.svg"
+    },
+    {
+      "data": "926806012025060000",
+      "length": 18,
+      "components": {
+        "facility": "9268",
+        "date": "06012025",
+        "time": "060000",
+        "date_formatted": "06/01/2025",
+        "time_slot": "06:00-07:59"
+      },
+      "analysis": {
+        "time_pattern": {
+          "hour": "06",
+          "suffix": "0000",
+          "is_special_slot": false
+        },
+        "character_frequency": {
+          "0": 8,
+          "2": 3,
+          "6": 3,
+          "9": 1,
+          "8": 1,
+          "1": 1,
+          "5": 1
+        },
+        "entropy": 2.3083,
+        "md5": "241a90dd47981d33bdd9862325e5ac6c"
+      },
+      "filename": "202506010754.svg"
+    },
+    {
+      "data": "926806012025080000",
+      "length": 18,
+      "components": {
+        "facility": "9268",
+        "date": "06012025",
+        "time": "080000",
+        "date_formatted": "06/01/2025",
+        "time_slot": "08:00-09:59"
+      },
+      "analysis": {
+        "time_pattern": {
+          "hour": "08",
+          "suffix": "0000",
+          "is_special_slot": false
+        },
+        "character_frequency": {
+          "0": 8,
+          "2": 3,
+          "6": 2,
+          "8": 2,
+          "9": 1,
+          "1": 1,
+          "5": 1
+        },
+        "entropy": 2.3502,
+        "md5": "d93156e7eb6595cfca29bd34b33a0507"
+      },
+      "filename": "202506010806.svg"
+    },
+    {
+      "data": "926806012025080000",
+      "length": 18,
+      "components": {
+        "facility": "9268",
+        "date": "06012025",
+        "time": "080000",
+        "date_formatted": "06/01/2025",
+        "time_slot": "08:00-09:59"
+      },
+      "analysis": {
+        "time_pattern": {
+          "hour": "08",
+          "suffix": "0000",
+          "is_special_slot": false
+        },
+        "character_frequency": {
+          "0": 8,
+          "2": 3,
+          "6": 2,
+          "8": 2,
+          "9": 1,
+          "1": 1,
+          "5": 1
+        },
+        "entropy": 2.3502,
+        "md5": "d93156e7eb6595cfca29bd34b33a0507"
+      },
+      "filename": "202506010824.svg"
+    },
+    {
+      "data": "926806012025080000",
+      "length": 18,
+      "components": {
+        "facility": "9268",
+        "date": "06012025",
+        "time": "080000",
+        "date_formatted": "06/01/2025",
+        "time_slot": "08:00-09:59"
+      },
+      "analysis": {
+        "time_pattern": {
+          "hour": "08",
+          "suffix": "0000",
+          "is_special_slot": false
+        },
+        "character_frequency": {
+          "0": 8,
+          "2": 3,
+          "6": 2,
+          "8": 2,
+          "9": 1,
+          "1": 1,
+          "5": 1
+        },
+        "entropy": 2.3502,
+        "md5": "d93156e7eb6595cfca29bd34b33a0507"
+      },
+      "filename": "202506010831.svg"
+    },
+    {
+      "data": "926806012025080000",
+      "length": 18,
+      "components": {
+        "facility": "9268",
+        "date": "06012025",
+        "time": "080000",
+        "date_formatted": "06/01/2025",
+        "time_slot": "08:00-09:59"
+      },
+      "analysis": {
+        "time_pattern": {
+          "hour": "08",
+          "suffix": "0000",
+          "is_special_slot": false
+        },
+        "character_frequency": {
+          "0": 8,
+          "2": 3,
+          "6": 2,
+          "8": 2,
+          "9": 1,
+          "1": 1,
+          "5": 1
+        },
+        "entropy": 2.3502,
+        "md5": "d93156e7eb6595cfca29bd34b33a0507"
+      },
+      "filename": "202506010834.svg"
+    },
+    {
+      "data": "926806012025080000",
+      "length": 18,
+      "components": {
+        "facility": "9268",
+        "date": "06012025",
+        "time": "080000",
+        "date_formatted": "06/01/2025",
+        "time_slot": "08:00-09:59"
+      },
+      "analysis": {
+        "time_pattern": {
+          "hour": "08",
+          "suffix": "0000",
+          "is_special_slot": false
+        },
+        "character_frequency": {
+          "0": 8,
+          "2": 3,
+          "6": 2,
+          "8": 2,
+          "9": 1,
+          "1": 1,
+          "5": 1
+        },
+        "entropy": 2.3502,
+        "md5": "d93156e7eb6595cfca29bd34b33a0507"
+      },
+      "filename": "202506010841.svg"
+    },
+    {
+      "data": "926806012025080000",
+      "length": 18,
+      "components": {
+        "facility": "9268",
+        "date": "06012025",
+        "time": "080000",
+        "date_formatted": "06/01/2025",
+        "time_slot": "08:00-09:59"
+      },
+      "analysis": {
+        "time_pattern": {
+          "hour": "08",
+          "suffix": "0000",
+          "is_special_slot": false
+        },
+        "character_frequency": {
+          "0": 8,
+          "2": 3,
+          "6": 2,
+          "8": 2,
+          "9": 1,
+          "1": 1,
+          "5": 1
+        },
+        "entropy": 2.3502,
+        "md5": "d93156e7eb6595cfca29bd34b33a0507"
+      },
+      "filename": "202506010844.svg"
+    },
+    {
+      "data": "926806012025080000",
+      "length": 18,
+      "components": {
+        "facility": "9268",
+        "date": "06012025",
+        "time": "080000",
+        "date_formatted": "06/01/2025",
+        "time_slot": "08:00-09:59"
+      },
+      "analysis": {
+        "time_pattern": {
+          "hour": "08",
+          "suffix": "0000",
+          "is_special_slot": false
+        },
+        "character_frequency": {
+          "0": 8,
+          "2": 3,
+          "6": 2,
+          "8": 2,
+          "9": 1,
+          "1": 1,
+          "5": 1
+        },
+        "entropy": 2.3502,
+        "md5": "d93156e7eb6595cfca29bd34b33a0507"
+      },
+      "filename": "202506010851.svg"
+    },
+    {
+      "data": "926806012025080000",
+      "length": 18,
+      "components": {
+        "facility": "9268",
+        "date": "06012025",
+        "time": "080000",
+        "date_formatted": "06/01/2025",
+        "time_slot": "08:00-09:59"
+      },
+      "analysis": {
+        "time_pattern": {
+          "hour": "08",
+          "suffix": "0000",
+          "is_special_slot": false
+        },
+        "character_frequency": {
+          "0": 8,
+          "2": 3,
+          "6": 2,
+          "8": 2,
+          "9": 1,
+          "1": 1,
+          "5": 1
+        },
+        "entropy": 2.3502,
+        "md5": "d93156e7eb6595cfca29bd34b33a0507"
+      },
+      "filename": "202506010854.svg"
+    },
+    {
+      "data": "926806012025080000",
+      "length": 18,
+      "components": {
+        "facility": "9268",
+        "date": "06012025",
+        "time": "080000",
+        "date_formatted": "06/01/2025",
+        "time_slot": "08:00-09:59"
+      },
+      "analysis": {
+        "time_pattern": {
+          "hour": "08",
+          "suffix": "0000",
+          "is_special_slot": false
+        },
+        "character_frequency": {
+          "0": 8,
+          "2": 3,
+          "6": 2,
+          "8": 2,
+          "9": 1,
+          "1": 1,
+          "5": 1
+        },
+        "entropy": 2.3502,
+        "md5": "d93156e7eb6595cfca29bd34b33a0507"
+      },
+      "filename": "202506010901.svg"
+    },
+    {
+      "data": "926806012025080000",
+      "length": 18,
+      "components": {
+        "facility": "9268",
+        "date": "06012025",
+        "time": "080000",
+        "date_formatted": "06/01/2025",
+        "time_slot": "08:00-09:59"
+      },
+      "analysis": {
+        "time_pattern": {
+          "hour": "08",
+          "suffix": "0000",
+          "is_special_slot": false
+        },
+        "character_frequency": {
+          "0": 8,
+          "2": 3,
+          "6": 2,
+          "8": 2,
+          "9": 1,
+          "1": 1,
+          "5": 1
+        },
+        "entropy": 2.3502,
+        "md5": "d93156e7eb6595cfca29bd34b33a0507"
+      },
+      "filename": "202506010904.svg"
+    },
+    {
+      "data": "926806012025080000",
+      "length": 18,
+      "components": {
+        "facility": "9268",
+        "date": "06012025",
+        "time": "080000",
+        "date_formatted": "06/01/2025",
+        "time_slot": "08:00-09:59"
+      },
+      "analysis": {
+        "time_pattern": {
+          "hour": "08",
+          "suffix": "0000",
+          "is_special_slot": false
+        },
+        "character_frequency": {
+          "0": 8,
+          "2": 3,
+          "6": 2,
+          "8": 2,
+          "9": 1,
+          "1": 1,
+          "5": 1
+        },
+        "entropy": 2.3502,
+        "md5": "d93156e7eb6595cfca29bd34b33a0507"
+      },
+      "filename": "202506010911.svg"
+    },
+    {
+      "data": "926806012025080000",
+      "length": 18,
+      "components": {
+        "facility": "9268",
+        "date": "06012025",
+        "time": "080000",
+        "date_formatted": "06/01/2025",
+        "time_slot": "08:00-09:59"
+      },
+      "analysis": {
+        "time_pattern": {
+          "hour": "08",
+          "suffix": "0000",
+          "is_special_slot": false
+        },
+        "character_frequency": {
+          "0": 8,
+          "2": 3,
+          "6": 2,
+          "8": 2,
+          "9": 1,
+          "1": 1,
+          "5": 1
+        },
+        "entropy": 2.3502,
+        "md5": "d93156e7eb6595cfca29bd34b33a0507"
+      },
+      "filename": "202506010914.svg"
+    },
+    {
+      "data": "926806012025080000",
+      "length": 18,
+      "components": {
+        "facility": "9268",
+        "date": "06012025",
+        "time": "080000",
+        "date_formatted": "06/01/2025",
+        "time_slot": "08:00-09:59"
+      },
+      "analysis": {
+        "time_pattern": {
+          "hour": "08",
+          "suffix": "0000",
+          "is_special_slot": false
+        },
+        "character_frequency": {
+          "0": 8,
+          "2": 3,
+          "6": 2,
+          "8": 2,
+          "9": 1,
+          "1": 1,
+          "5": 1
+        },
+        "entropy": 2.3502,
+        "md5": "d93156e7eb6595cfca29bd34b33a0507"
+      },
+      "filename": "202506010921.svg"
+    },
+    {
+      "data": "926806012025080000",
+      "length": 18,
+      "components": {
+        "facility": "9268",
+        "date": "06012025",
+        "time": "080000",
+        "date_formatted": "06/01/2025",
+        "time_slot": "08:00-09:59"
+      },
+      "analysis": {
+        "time_pattern": {
+          "hour": "08",
+          "suffix": "0000",
+          "is_special_slot": false
+        },
+        "character_frequency": {
+          "0": 8,
+          "2": 3,
+          "6": 2,
+          "8": 2,
+          "9": 1,
+          "1": 1,
+          "5": 1
+        },
+        "entropy": 2.3502,
+        "md5": "d93156e7eb6595cfca29bd34b33a0507"
+      },
+      "filename": "202506010924.svg"
+    },
+    {
+      "data": "926806012025080000",
+      "length": 18,
+      "components": {
+        "facility": "9268",
+        "date": "06012025",
+        "time": "080000",
+        "date_formatted": "06/01/2025",
+        "time_slot": "08:00-09:59"
+      },
+      "analysis": {
+        "time_pattern": {
+          "hour": "08",
+          "suffix": "0000",
+          "is_special_slot": false
+        },
+        "character_frequency": {
+          "0": 8,
+          "2": 3,
+          "6": 2,
+          "8": 2,
+          "9": 1,
+          "1": 1,
+          "5": 1
+        },
+        "entropy": 2.3502,
+        "md5": "d93156e7eb6595cfca29bd34b33a0507"
+      },
+      "filename": "202506010932.svg"
+    },
+    {
+      "data": "926806012025080000",
+      "length": 18,
+      "components": {
+        "facility": "9268",
+        "date": "06012025",
+        "time": "080000",
+        "date_formatted": "06/01/2025",
+        "time_slot": "08:00-09:59"
+      },
+      "analysis": {
+        "time_pattern": {
+          "hour": "08",
+          "suffix": "0000",
+          "is_special_slot": false
+        },
+        "character_frequency": {
+          "0": 8,
+          "2": 3,
+          "6": 2,
+          "8": 2,
+          "9": 1,
+          "1": 1,
+          "5": 1
+        },
+        "entropy": 2.3502,
+        "md5": "d93156e7eb6595cfca29bd34b33a0507"
+      },
+      "filename": "202506010934.svg"
+    },
+    {
+      "data": "926806012025080000",
+      "length": 18,
+      "components": {
+        "facility": "9268",
+        "date": "06012025",
+        "time": "080000",
+        "date_formatted": "06/01/2025",
+        "time_slot": "08:00-09:59"
+      },
+      "analysis": {
+        "time_pattern": {
+          "hour": "08",
+          "suffix": "0000",
+          "is_special_slot": false
+        },
+        "character_frequency": {
+          "0": 8,
+          "2": 3,
+          "6": 2,
+          "8": 2,
+          "9": 1,
+          "1": 1,
+          "5": 1
+        },
+        "entropy": 2.3502,
+        "md5": "d93156e7eb6595cfca29bd34b33a0507"
+      },
+      "filename": "202506010942.svg"
+    },
+    {
+      "data": "926806012025080000",
+      "length": 18,
+      "components": {
+        "facility": "9268",
+        "date": "06012025",
+        "time": "080000",
+        "date_formatted": "06/01/2025",
+        "time_slot": "08:00-09:59"
+      },
+      "analysis": {
+        "time_pattern": {
+          "hour": "08",
+          "suffix": "0000",
+          "is_special_slot": false
+        },
+        "character_frequency": {
+          "0": 8,
+          "2": 3,
+          "6": 2,
+          "8": 2,
+          "9": 1,
+          "1": 1,
+          "5": 1
+        },
+        "entropy": 2.3502,
+        "md5": "d93156e7eb6595cfca29bd34b33a0507"
+      },
+      "filename": "202506010944.svg"
+    },
+    {
+      "data": "926806012025080000",
+      "length": 18,
+      "components": {
+        "facility": "9268",
+        "date": "06012025",
+        "time": "080000",
+        "date_formatted": "06/01/2025",
+        "time_slot": "08:00-09:59"
+      },
+      "analysis": {
+        "time_pattern": {
+          "hour": "08",
+          "suffix": "0000",
+          "is_special_slot": false
+        },
+        "character_frequency": {
+          "0": 8,
+          "2": 3,
+          "6": 2,
+          "8": 2,
+          "9": 1,
+          "1": 1,
+          "5": 1
+        },
+        "entropy": 2.3502,
+        "md5": "d93156e7eb6595cfca29bd34b33a0507"
+      },
+      "filename": "202506010952.svg"
+    },
+    {
+      "data": "926806012025080000",
+      "length": 18,
+      "components": {
+        "facility": "9268",
+        "date": "06012025",
+        "time": "080000",
+        "date_formatted": "06/01/2025",
+        "time_slot": "08:00-09:59"
+      },
+      "analysis": {
+        "time_pattern": {
+          "hour": "08",
+          "suffix": "0000",
+          "is_special_slot": false
+        },
+        "character_frequency": {
+          "0": 8,
+          "2": 3,
+          "6": 2,
+          "8": 2,
+          "9": 1,
+          "1": 1,
+          "5": 1
+        },
+        "entropy": 2.3502,
+        "md5": "d93156e7eb6595cfca29bd34b33a0507"
+      },
+      "filename": "202506010954.svg"
+    },
+    {
+      "data": "926806012025100000",
+      "length": 18,
+      "components": {
+        "facility": "9268",
+        "date": "06012025",
+        "time": "100000",
+        "date_formatted": "06/01/2025",
+        "time_slot": "10:00-11:59"
+      },
+      "analysis": {
+        "time_pattern": {
+          "hour": "10",
+          "suffix": "0000",
+          "is_special_slot": false
+        },
+        "character_frequency": {
+          "0": 8,
+          "2": 3,
+          "6": 2,
+          "1": 2,
+          "9": 1,
+          "8": 1,
+          "5": 1
+        },
+        "entropy": 2.3502,
+        "md5": "dbf5c9acb5e76614a31069c784f6fa9b"
+      },
+      "filename": "202506011002.svg"
+    },
+    {
+      "data": "926806012025100000",
+      "length": 18,
+      "components": {
+        "facility": "9268",
+        "date": "06012025",
+        "time": "100000",
+        "date_formatted": "06/01/2025",
+        "time_slot": "10:00-11:59"
+      },
+      "analysis": {
+        "time_pattern": {
+          "hour": "10",
+          "suffix": "0000",
+          "is_special_slot": false
+        },
+        "character_frequency": {
+          "0": 8,
+          "2": 3,
+          "6": 2,
+          "1": 2,
+          "9": 1,
+          "8": 1,
+          "5": 1
+        },
+        "entropy": 2.3502,
+        "md5": "dbf5c9acb5e76614a31069c784f6fa9b"
+      },
+      "filename": "202506011003.svg"
+    },
+    {
+      "data": "926806012025100000",
+      "length": 18,
+      "components": {
+        "facility": "9268",
+        "date": "06012025",
+        "time": "100000",
+        "date_formatted": "06/01/2025",
+        "time_slot": "10:00-11:59"
+      },
+      "analysis": {
+        "time_pattern": {
+          "hour": "10",
+          "suffix": "0000",
+          "is_special_slot": false
+        },
+        "character_frequency": {
+          "0": 8,
+          "2": 3,
+          "6": 2,
+          "1": 2,
+          "9": 1,
+          "8": 1,
+          "5": 1
+        },
+        "entropy": 2.3502,
+        "md5": "dbf5c9acb5e76614a31069c784f6fa9b"
+      },
+      "filename": "202506011004.svg"
+    },
+    {
+      "data": "926806012025100000",
+      "length": 18,
+      "components": {
+        "facility": "9268",
+        "date": "06012025",
+        "time": "100000",
+        "date_formatted": "06/01/2025",
+        "time_slot": "10:00-11:59"
+      },
+      "analysis": {
+        "time_pattern": {
+          "hour": "10",
+          "suffix": "0000",
+          "is_special_slot": false
+        },
+        "character_frequency": {
+          "0": 8,
+          "2": 3,
+          "6": 2,
+          "1": 2,
+          "9": 1,
+          "8": 1,
+          "5": 1
+        },
+        "entropy": 2.3502,
+        "md5": "dbf5c9acb5e76614a31069c784f6fa9b"
+      },
+      "filename": "202506011012.svg"
+    },
+    {
+      "data": "926806012025100000",
+      "length": 18,
+      "components": {
+        "facility": "9268",
+        "date": "06012025",
+        "time": "100000",
+        "date_formatted": "06/01/2025",
+        "time_slot": "10:00-11:59"
+      },
+      "analysis": {
+        "time_pattern": {
+          "hour": "10",
+          "suffix": "0000",
+          "is_special_slot": false
+        },
+        "character_frequency": {
+          "0": 8,
+          "2": 3,
+          "6": 2,
+          "1": 2,
+          "9": 1,
+          "8": 1,
+          "5": 1
+        },
+        "entropy": 2.3502,
+        "md5": "dbf5c9acb5e76614a31069c784f6fa9b"
+      },
+      "filename": "202506011015.svg"
+    },
+    {
+      "data": "926806012025100000",
+      "length": 18,
+      "components": {
+        "facility": "9268",
+        "date": "06012025",
+        "time": "100000",
+        "date_formatted": "06/01/2025",
+        "time_slot": "10:00-11:59"
+      },
+      "analysis": {
+        "time_pattern": {
+          "hour": "10",
+          "suffix": "0000",
+          "is_special_slot": false
+        },
+        "character_frequency": {
+          "0": 8,
+          "2": 3,
+          "6": 2,
+          "1": 2,
+          "9": 1,
+          "8": 1,
+          "5": 1
+        },
+        "entropy": 2.3502,
+        "md5": "dbf5c9acb5e76614a31069c784f6fa9b"
+      },
+      "filename": "202506011022.svg"
+    },
+    {
+      "data": "926806012025100000",
+      "length": 18,
+      "components": {
+        "facility": "9268",
+        "date": "06012025",
+        "time": "100000",
+        "date_formatted": "06/01/2025",
+        "time_slot": "10:00-11:59"
+      },
+      "analysis": {
+        "time_pattern": {
+          "hour": "10",
+          "suffix": "0000",
+          "is_special_slot": false
+        },
+        "character_frequency": {
+          "0": 8,
+          "2": 3,
+          "6": 2,
+          "1": 2,
+          "9": 1,
+          "8": 1,
+          "5": 1
+        },
+        "entropy": 2.3502,
+        "md5": "dbf5c9acb5e76614a31069c784f6fa9b"
+      },
+      "filename": "202506011025.svg"
+    },
+    {
+      "data": "926806012025100000",
+      "length": 18,
+      "components": {
+        "facility": "9268",
+        "date": "06012025",
+        "time": "100000",
+        "date_formatted": "06/01/2025",
+        "time_slot": "10:00-11:59"
+      },
+      "analysis": {
+        "time_pattern": {
+          "hour": "10",
+          "suffix": "0000",
+          "is_special_slot": false
+        },
+        "character_frequency": {
+          "0": 8,
+          "2": 3,
+          "6": 2,
+          "1": 2,
+          "9": 1,
+          "8": 1,
+          "5": 1
+        },
+        "entropy": 2.3502,
+        "md5": "dbf5c9acb5e76614a31069c784f6fa9b"
+      },
+      "filename": "202506011032.svg"
+    },
+    {
+      "data": "926806012025100000",
+      "length": 18,
+      "components": {
+        "facility": "9268",
+        "date": "06012025",
+        "time": "100000",
+        "date_formatted": "06/01/2025",
+        "time_slot": "10:00-11:59"
+      },
+      "analysis": {
+        "time_pattern": {
+          "hour": "10",
+          "suffix": "0000",
+          "is_special_slot": false
+        },
+        "character_frequency": {
+          "0": 8,
+          "2": 3,
+          "6": 2,
+          "1": 2,
+          "9": 1,
+          "8": 1,
+          "5": 1
+        },
+        "entropy": 2.3502,
+        "md5": "dbf5c9acb5e76614a31069c784f6fa9b"
+      },
+      "filename": "202506011035.svg"
+    },
+    {
+      "data": "926806012025100000",
+      "length": 18,
+      "components": {
+        "facility": "9268",
+        "date": "06012025",
+        "time": "100000",
+        "date_formatted": "06/01/2025",
+        "time_slot": "10:00-11:59"
+      },
+      "analysis": {
+        "time_pattern": {
+          "hour": "10",
+          "suffix": "0000",
+          "is_special_slot": false
+        },
+        "character_frequency": {
+          "0": 8,
+          "2": 3,
+          "6": 2,
+          "1": 2,
+          "9": 1,
+          "8": 1,
+          "5": 1
+        },
+        "entropy": 2.3502,
+        "md5": "dbf5c9acb5e76614a31069c784f6fa9b"
+      },
+      "filename": "202506011042.svg"
+    },
+    {
+      "data": "926806012025100000",
+      "length": 18,
+      "components": {
+        "facility": "9268",
+        "date": "06012025",
+        "time": "100000",
+        "date_formatted": "06/01/2025",
+        "time_slot": "10:00-11:59"
+      },
+      "analysis": {
+        "time_pattern": {
+          "hour": "10",
+          "suffix": "0000",
+          "is_special_slot": false
+        },
+        "character_frequency": {
+          "0": 8,
+          "2": 3,
+          "6": 2,
+          "1": 2,
+          "9": 1,
+          "8": 1,
+          "5": 1
+        },
+        "entropy": 2.3502,
+        "md5": "dbf5c9acb5e76614a31069c784f6fa9b"
+      },
+      "filename": "202506011045.svg"
+    },
+    {
+      "data": "926806012025100000",
+      "length": 18,
+      "components": {
+        "facility": "9268",
+        "date": "06012025",
+        "time": "100000",
+        "date_formatted": "06/01/2025",
+        "time_slot": "10:00-11:59"
+      },
+      "analysis": {
+        "time_pattern": {
+          "hour": "10",
+          "suffix": "0000",
+          "is_special_slot": false
+        },
+        "character_frequency": {
+          "0": 8,
+          "2": 3,
+          "6": 2,
+          "1": 2,
+          "9": 1,
+          "8": 1,
+          "5": 1
+        },
+        "entropy": 2.3502,
+        "md5": "dbf5c9acb5e76614a31069c784f6fa9b"
+      },
+      "filename": "202506011052.svg"
+    },
+    {
+      "data": "926806012025100000",
+      "length": 18,
+      "components": {
+        "facility": "9268",
+        "date": "06012025",
+        "time": "100000",
+        "date_formatted": "06/01/2025",
+        "time_slot": "10:00-11:59"
+      },
+      "analysis": {
+        "time_pattern": {
+          "hour": "10",
+          "suffix": "0000",
+          "is_special_slot": false
+        },
+        "character_frequency": {
+          "0": 8,
+          "2": 3,
+          "6": 2,
+          "1": 2,
+          "9": 1,
+          "8": 1,
+          "5": 1
+        },
+        "entropy": 2.3502,
+        "md5": "dbf5c9acb5e76614a31069c784f6fa9b"
+      },
+      "filename": "202506011055.svg"
+    },
+    {
+      "data": "926806012025100000",
+      "length": 18,
+      "components": {
+        "facility": "9268",
+        "date": "06012025",
+        "time": "100000",
+        "date_formatted": "06/01/2025",
+        "time_slot": "10:00-11:59"
+      },
+      "analysis": {
+        "time_pattern": {
+          "hour": "10",
+          "suffix": "0000",
+          "is_special_slot": false
+        },
+        "character_frequency": {
+          "0": 8,
+          "2": 3,
+          "6": 2,
+          "1": 2,
+          "9": 1,
+          "8": 1,
+          "5": 1
+        },
+        "entropy": 2.3502,
+        "md5": "dbf5c9acb5e76614a31069c784f6fa9b"
+      },
+      "filename": "202506011102.svg"
+    },
+    {
+      "data": "926806012025100000",
+      "length": 18,
+      "components": {
+        "facility": "9268",
+        "date": "06012025",
+        "time": "100000",
+        "date_formatted": "06/01/2025",
+        "time_slot": "10:00-11:59"
+      },
+      "analysis": {
+        "time_pattern": {
+          "hour": "10",
+          "suffix": "0000",
+          "is_special_slot": false
+        },
+        "character_frequency": {
+          "0": 8,
+          "2": 3,
+          "6": 2,
+          "1": 2,
+          "9": 1,
+          "8": 1,
+          "5": 1
+        },
+        "entropy": 2.3502,
+        "md5": "dbf5c9acb5e76614a31069c784f6fa9b"
+      },
+      "filename": "202506011105.svg"
+    },
+    {
+      "data": "926806012025100000",
+      "length": 18,
+      "components": {
+        "facility": "9268",
+        "date": "06012025",
+        "time": "100000",
+        "date_formatted": "06/01/2025",
+        "time_slot": "10:00-11:59"
+      },
+      "analysis": {
+        "time_pattern": {
+          "hour": "10",
+          "suffix": "0000",
+          "is_special_slot": false
+        },
+        "character_frequency": {
+          "0": 8,
+          "2": 3,
+          "6": 2,
+          "1": 2,
+          "9": 1,
+          "8": 1,
+          "5": 1
+        },
+        "entropy": 2.3502,
+        "md5": "dbf5c9acb5e76614a31069c784f6fa9b"
+      },
+      "filename": "202506011113.svg"
+    },
+    {
+      "data": "926806012025100000",
+      "length": 18,
+      "components": {
+        "facility": "9268",
+        "date": "06012025",
+        "time": "100000",
+        "date_formatted": "06/01/2025",
+        "time_slot": "10:00-11:59"
+      },
+      "analysis": {
+        "time_pattern": {
+          "hour": "10",
+          "suffix": "0000",
+          "is_special_slot": false
+        },
+        "character_frequency": {
+          "0": 8,
+          "2": 3,
+          "6": 2,
+          "1": 2,
+          "9": 1,
+          "8": 1,
+          "5": 1
+        },
+        "entropy": 2.3502,
+        "md5": "dbf5c9acb5e76614a31069c784f6fa9b"
+      },
+      "filename": "202506011115.svg"
+    },
+    {
+      "data": "926806012025200000",
+      "length": 18,
+      "components": {
+        "facility": "9268",
+        "date": "06012025",
+        "time": "200000",
+        "date_formatted": "06/01/2025",
+        "time_slot": "20:00-21:59"
+      },
+      "analysis": {
+        "time_pattern": {
+          "hour": "20",
+          "suffix": "0000",
+          "is_special_slot": false
+        },
+        "character_frequency": {
+          "0": 8,
+          "2": 4,
+          "6": 2,
+          "9": 1,
+          "8": 1,
+          "1": 1,
+          "5": 1
+        },
+        "entropy": 2.281,
+        "md5": "279a7330a3f51094538e75afaab4dbef"
+      },
+      "filename": "202506012000.svg"
+    },
+    {
+      "data": "926806022025000001",
+      "length": 18,
+      "components": {
+        "facility": "9268",
+        "date": "06022025",
+        "time": "000001",
+        "date_formatted": "06/02/2025",
+        "time_slot": "00:00-01:59"
+      },
+      "analysis": {
+        "time_pattern": {
+          "hour": "00",
+          "suffix": "0001",
+          "is_special_slot": true
+        },
+        "character_frequency": {
+          "0": 8,
+          "2": 4,
+          "6": 2,
+          "9": 1,
+          "8": 1,
+          "5": 1,
+          "1": 1
+        },
+        "entropy": 2.281,
+        "md5": "34f303ce3a2cc81d3441ea3f670fc832"
+      },
+      "filename": "202506020042.svg"
+    },
+    {
+      "data": "926806042025180000",
+      "length": 18,
+      "components": {
+        "facility": "9268",
+        "date": "06042025",
+        "time": "180000",
+        "date_formatted": "06/04/2025",
+        "time_slot": "18:00-19:59"
+      },
+      "analysis": {
+        "time_pattern": {
+          "hour": "18",
+          "suffix": "0000",
+          "is_special_slot": false
+        },
+        "character_frequency": {
+          "0": 7,
+          "2": 3,
+          "6": 2,
+          "8": 2,
+          "9": 1,
+          "4": 1,
+          "5": 1,
+          "1": 1
+        },
+        "entropy": 2.5918,
+        "md5": "cec076b2909f64491d7c94e139faf39c"
+      },
+      "filename": "202506041837.svg"
+    },
+    {
+      "data": "926806042025220000",
+      "length": 18,
+      "components": {
+        "facility": "9268",
+        "date": "06042025",
+        "time": "220000",
+        "date_formatted": "06/04/2025",
+        "time_slot": "22:00-23:59"
+      },
+      "analysis": {
+        "time_pattern": {
+          "hour": "22",
+          "suffix": "0000",
+          "is_special_slot": false
+        },
+        "character_frequency": {
+          "0": 7,
+          "2": 5,
+          "6": 2,
+          "9": 1,
+          "8": 1,
+          "4": 1,
+          "5": 1
+        },
+        "entropy": 2.3221,
+        "md5": "473ad4b10c9eae8ed2cc3916b8ab3311"
+      },
+      "filename": "202506042334.svg"
+    }
+  ]
+}
