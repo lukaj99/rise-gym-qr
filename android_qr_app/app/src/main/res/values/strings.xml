@@ -1,10 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">RiseGym QR Predictor</string>
+    <string name="app_name">Rise Gym Access</string>
+    <string name="app_full_name">Rise Gym Access</string>
     <string name="current_time_block">Current Time Block</string>
-    <string name="gray_code">Gray Code</string>
-    <string name="module_count">Module Count</string>
     <string name="next_update">Next Update</string>
     <string name="minutes">minutes</string>
     <string name="unknown">Unknown</string>
+    
+    <!-- Rise Gym Branding -->
+    <string name="rise_gym">Rise Gym</string>
+    <string name="stevenage_location">Stevenage</string>
+    <string name="welwyn_location">Welwyn Garden City</string>
+    <string name="access_code">Access Code</string>
+    <string name="qr_code">QR Code</string>
+    <string name="generate_code">Generate Access Code</string>
+    <string name="scan_ready">Ready to Scan</string>
+    
+    <!-- Status Messages -->
+    <string name="status_verified">Verified</string>
+    <string name="status_ready">Ready</string>
+    <string name="credentials_secure">Your credentials are securely encrypted</string>
 </resources>

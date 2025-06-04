@@ -19,7 +19,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -95,19 +97,33 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // Logo/Title
-            Icon(
-                imageVector = Icons.Default.FitnessCenter,
-                contentDescription = "Rise Gym",
-                modifier = Modifier.size(80.dp),
-                tint = MaterialTheme.colorScheme.primary
+            // Rise Gym Logo
+            Image(
+                painter = painterResource(id = R.drawable.ic_rise_logo),
+                contentDescription = "Rise Gym Logo",
+                modifier = Modifier
+                    .size(80.dp)
+                    .padding(bottom = 8.dp),
+                colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary)
+            )
+            
+            // Rise Gym Branding
+            Text(
+                text = "RISE GYM",
+                fontSize = 36.sp,
+                fontWeight = FontWeight.Black,
+                letterSpacing = 2.sp,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(bottom = 4.dp)
             )
             
             Text(
-                text = "Rise Gym QR",
-                fontSize = 32.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(top = 16.dp, bottom = 32.dp)
+                text = "ACCESS",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium,
+                letterSpacing = 1.sp,
+                color = MaterialTheme.colorScheme.secondary,
+                modifier = Modifier.padding(bottom = 32.dp)
             )
             
             // Username field
@@ -330,7 +346,7 @@ fun QRPredictorScreen(onLogout: () -> Unit) {
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Header with logout button
+            // Header with Rise Gym branding and logout button
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -338,12 +354,33 @@ fun QRPredictorScreen(onLogout: () -> Unit) {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "RiseGym QR Predictor",
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Black
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.ic_rise_logo),
+                        contentDescription = "Rise Gym Logo",
+                        modifier = Modifier.size(32.dp),
+                        colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            text = "RISE GYM",
+                            fontSize = 22.sp,
+                            fontWeight = FontWeight.Black,
+                            letterSpacing = 1.sp,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            text = "Access",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium,
+                            letterSpacing = 0.5.sp,
+                            color = MaterialTheme.colorScheme.secondary
+                        )
+                    }
+                }
                 IconButton(onClick = onLogout) {
                     Icon(
                         Icons.Default.Logout,

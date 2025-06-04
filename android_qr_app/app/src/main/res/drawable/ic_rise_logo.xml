@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    
+    <!-- Top chevron pointing upward -->
+    <path
+        android:fillColor="@color/rise_black"
+        android:pathData="M24,8 L32,16 L29.5,18.5 L24,13 L18.5,18.5 L16,16 Z" />
+    
+    <!-- Bottom chevron pointing upward -->
+    <path
+        android:fillColor="@color/rise_black"
+        android:pathData="M24,20 L32,28 L29.5,30.5 L24,25 L18.5,30.5 L16,28 Z" />
+    
+    <!-- Optional: Add subtle gradient for depth -->
+    <path
+        android:fillColor="@color/rise_dark_gray"
+        android:fillAlpha="0.3"
+        android:pathData="M24,22 L30,28 L29.5,28.5 L24,23 L18.5,28.5 L18,28 Z" />
+</vector>
