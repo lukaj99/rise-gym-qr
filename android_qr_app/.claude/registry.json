@@ -1,0 +1,56 @@
+{
+  "tools": [
+    {
+      "name": "compact-context",
+      "type": "command",
+      "description": "Compress and optimize context information"
+    },
+    {
+      "name": "discover-tools",
+      "type": "command",
+      "description": "Scan and list available development tools"
+    },
+    {
+      "name": "enhanced-validate",
+      "type": "command",
+      "description": "Enhanced validation for project consistency"
+    },
+    {
+      "name": "registry-tools",
+      "type": "command",
+      "description": "Manage tool registry and capabilities"
+    },
+    {
+      "name": "restore-session",
+      "type": "command",
+      "description": "Restore context from previous sessions"
+    },
+    {
+      "name": "session-init",
+      "type": "command",
+      "description": "Initialize Claude Code session with validation"
+    },
+    {
+      "name": "share-patterns",
+      "type": "command",
+      "description": "Share development patterns between projects"
+    },
+    {
+      "name": "use-template",
+      "type": "command",
+      "description": "Apply workflow templates"
+    },
+    {
+      "name": "validate-context",
+      "type": "command",
+      "description": "Validate project context for contradictions"
+    },
+    {
+      "name": "validate-android",
+      "type": "script",
+      "description": "Android-specific validation checks"
+    }
+  ],
+  "version": "1.0",
+  "last_updated": "2025-01-06"
+}
