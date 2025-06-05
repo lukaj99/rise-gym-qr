@@ -5,36 +5,13 @@
     android:viewportWidth="48"
     android:viewportHeight="48">
     
-    <!-- Top chevron pointing upward -->
+    <!-- Top chevron pointing upward - larger and more accurate -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M24,6 L34,16 L31,19 L24,12 L17,19 L14,16 Z" />
+        android:pathData="M24,10 L38,24 L33,29 L24,20 L15,29 L10,24 Z" />
     
-    <!-- Bottom chevron pointing upward -->
+    <!-- Bottom chevron pointing upward - larger and more accurate -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M24,16 L34,26 L31,29 L24,22 L17,29 L14,26 Z" />
-    
-    <!-- Rise text -->
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M10,32 L10,42 L12,42 L12,38 L14,38 L16,42 L18,42 L16,37.5 Q18,36.5 18,34.5 Q18,32 15,32 Z M12,34 L15,34 Q16,34 16,35.5 Q16,36.5 15,36.5 L12,36.5 Z" />
-    
-    <!-- i dot and line -->
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M20,32 L20,33.5 L21.5,33.5 L21.5,32 Z" />
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M20,35 L20,42 L21.5,42 L21.5,35 Z" />
-    
-    <!-- s -->
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M24,35 Q24,34 25,34 L27,34 Q28,34 28,35 Q28,36 27,36 L25,36 Q23,36 23,38.5 Q23,41 25,41 L27,41 Q29,41 29,39 L27.5,39 Q27.5,39.5 27,39.5 L25,39.5 Q24.5,39.5 24.5,38.5 Q24.5,37.5 25,37.5 L27,37.5 Q29,37.5 29,35 Q29,32.5 27,32.5 L25,32.5 Q23,32.5 23,35 Z" />
-    
-    <!-- e -->
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M31,35 Q31,32.5 33,32.5 L35,32.5 Q37,32.5 37,35 L37,36.5 L32.5,36.5 Q32.5,39.5 35,39.5 Q36,39.5 36,39 L37.5,39 Q37.5,41 35,41 Q31,41 31,37.5 Z M32.5,35 L35.5,35 Q35.5,34 35,34 L33,34 Q32.5,34 32.5,35 Z" />
+        android:pathData="M24,22 L38,36 L33,41 L24,32 L15,41 L10,36 Z" />
 </vector>
