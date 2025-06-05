@@ -16,6 +16,27 @@
 -keep class com.google.zxing.** { *; }
 -keep class com.journeyapps.barcodescanner.** { *; }
 
+# Keep OkHttp classes
+-dontwarn okhttp3.**
+-keep class okhttp3.** { *; }
+-dontwarn okio.**
+
+# Keep Compose classes
+-keep class androidx.compose.** { *; }
+-dontwarn androidx.compose.**
+
+# Keep coroutines
+-keepnames class kotlinx.coroutines.internal.MainDispatcherFactory {}
+-keepnames class kotlinx.coroutines.CoroutineExceptionHandler {}
+
+# Keep Tasker integration classes
+-keep class com.risegym.qrpredictor.TaskerActivity { *; }
+-keep class com.risegym.qrpredictor.TaskerQRService { *; }
+
+# Keep app classes for reflection
+-keep class com.risegym.qrpredictor.QRPatternGenerator { *; }
+-keep class com.risegym.qrpredictor.QRCodeGenerator { *; }
+
 # Uncomment this to preserve the line number information for
 # debugging stack traces.
 #-keepattributes SourceFile,LineNumberTable

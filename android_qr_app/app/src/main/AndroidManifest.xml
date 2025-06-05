@@ -5,11 +5,16 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" 
+        android:maxSdkVersion="28" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" 
+        android:maxSdkVersion="32" />
 
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/Theme.RiseGymQRPredictor"
@@ -26,6 +31,28 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        
+        <!-- Tasker Integration Activity -->
+        <activity 
+            android:name=".TaskerActivity"
+            android:exported="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar">
+            <intent-filter>
+                <action android:name="com.risegym.qrpredictor.GENERATE_QR_IMAGE" />
+                <action android:name="com.risegym.qrpredictor.GET_QR_TEXT" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        
+        <!-- Tasker QR Service -->
+        <service 
+            android:name=".TaskerQRService"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.risegym.qrpredictor.GENERATE_QR" />
+                <action android:name="com.risegym.qrpredictor.GET_QR_DATA" />
+            </intent-filter>
+        </service>
     </application>
 
 </manifest>

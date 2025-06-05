@@ -6,11 +6,20 @@ import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
 import com.google.zxing.qrcode.QRCodeWriter
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Generates QR codes with proper module configuration and padding
+ * Optimized for multi-threading on Pixel 9 Pro XL (Tensor G4)
  */
 object QRCodeGenerator {
+    
+    // Thread-safe cache for QR codes (leveraging 16GB RAM on Pixel 9 Pro XL)
+    private val qrCache = ConcurrentHashMap<String, Bitmap>()
     
     /**
      * Generate QR code bitmap with proper padding for scanning
@@ -92,11 +101,154 @@ object QRCodeGenerator {
     }
     
     /**
-     * Generate QR code for current time block
+     * Generate QR code for current time block with aggressive caching
+     * Optimized for Pixel 9 Pro XL's 16GB RAM
      */
-    fun generateCurrentQRCode(size: Int = 800): Bitmap {
+    suspend fun generateCurrentQRCode(size: Int = 800): Bitmap = withContext(Dispatchers.Default) {
         val content = QRPatternGenerator.getCurrentQRContent()
-        return generateQRCodeWithPadding(content, size)
+        val cacheKey = "${content}_${size}"
+        
+        // Check cache first (utilizing 16GB RAM)
+        qrCache[cacheKey]?.let { cachedBitmap ->
+            if (!cachedBitmap.isRecycled) {
+                return@withContext cachedBitmap
+            } else {
+                qrCache.remove(cacheKey)
+            }
+        }
+        
+        // Generate new QR code on background thread
+        val newBitmap = generateQRCodeWithPaddingAsync(content, size)
+        
+        // Cache for future use (but limit cache size to prevent OOM)
+        if (qrCache.size < 50) { // Allow up to 50 cached QR codes
+            qrCache[cacheKey] = newBitmap
+        }
+        
+        newBitmap
+    }
+    
+    /**
+     * Multi-threaded QR generation leveraging Tensor G4's 9 cores
+     */
+    private suspend fun generateQRCodeWithPaddingAsync(
+        content: String, 
+        size: Int = 800,
+        moduleCount: Int? = null
+    ): Bitmap = coroutineScope {
+        val qrCodeWriter = QRCodeWriter()
+        
+        // Configure QR generation hints - Use Q level for 100% match!
+        val hints = hashMapOf<EncodeHintType, Any>().apply {
+            put(EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.Q)  // Q level for pixel-perfect match
+            put(EncodeHintType.MARGIN, 4) // Quiet zone margin (4 modules)
+            put(EncodeHintType.CHARACTER_SET, "UTF-8")
+            put(EncodeHintType.QR_VERSION, 1) // Force version 1 (21x21 modules)
+        }
+        
+        try {
+            // Generate QR code matrix on background thread
+            val bitMatrix = async(Dispatchers.Default) {
+                qrCodeWriter.encode(content, BarcodeFormat.QR_CODE, size, size, hints)
+            }.await()
+            
+            // Parallel calculation of QR boundaries
+            val boundaryCalculation = async(Dispatchers.Default) {
+                val qrStartX = findQRStart(bitMatrix, true)
+                val qrStartY = findQRStart(bitMatrix, false)
+                val qrEndX = findQREnd(bitMatrix, true)
+                val qrEndY = findQREnd(bitMatrix, false)
+                
+                QuadTuple(qrStartX, qrStartY, qrEndX, qrEndY)
+            }
+            
+            // Create bitmap while boundaries are being calculated
+            val bitmap = async(Dispatchers.Default) {
+                Bitmap.createBitmap(size, size, Bitmap.Config.RGB_565)
+            }
+            
+            val boundaries = boundaryCalculation.await()
+            val resultBitmap = bitmap.await()
+            
+            // Parallel pixel processing using multiple cores
+            val numThreads = 8 // Utilize 8 of Tensor G4's 9 cores for pixel operations
+            val pixelJobs = (0 until numThreads).map { threadIndex ->
+                async(Dispatchers.Default) {
+                    drawQRSection(
+                        resultBitmap, bitMatrix, boundaries, 
+                        size, threadIndex, numThreads
+                    )
+                }
+            }
+            
+            // Wait for all pixel operations to complete
+            pixelJobs.forEach { it.await() }
+            
+            // Add padding bars on separate thread
+            async(Dispatchers.Default) {
+                val paddingSize = size / 8
+                addPaddingBars(resultBitmap, paddingSize)
+            }.await()
+            
+            resultBitmap
+            
+        } catch (e: Exception) {
+            // Fallback: create simple error bitmap
+            createErrorBitmap(size, "QR Generation Failed")
+        }
+    }
+    
+    private data class QuadTuple(val qrStartX: Int, val qrStartY: Int, val qrEndX: Int, val qrEndY: Int)
+    
+    /**
+     * Draw QR code section optimized for multi-core processing
+     */
+    private fun drawQRSection(
+        bitmap: Bitmap,
+        bitMatrix: com.google.zxing.common.BitMatrix,
+        boundaries: QuadTuple,
+        size: Int,
+        threadIndex: Int,
+        numThreads: Int
+    ) {
+        val (qrStartX, qrStartY, qrEndX, qrEndY) = boundaries
+        val qrWidth = qrEndX - qrStartX + 1
+        val qrHeight = qrEndY - qrStartY + 1
+        
+        val paddingSize = size / 8
+        val qrDisplaySize = size - (2 * paddingSize)
+        val offsetX = paddingSize
+        val offsetY = paddingSize
+        
+        // Divide work among threads
+        val rowsPerThread = size / numThreads
+        val startRow = threadIndex * rowsPerThread
+        val endRow = if (threadIndex == numThreads - 1) size else (threadIndex + 1) * rowsPerThread
+        
+        // Fill background with white
+        for (y in startRow until endRow) {
+            for (x in 0 until size) {
+                bitmap.setPixel(x, y, Color.WHITE)
+            }
+        }
+        
+        // Draw QR code section
+        for (y in maxOf(startRow, paddingSize) until minOf(endRow, paddingSize + qrDisplaySize)) {
+            for (x in paddingSize until paddingSize + qrDisplaySize) {
+                val qrX = x - offsetX
+                val qrY = y - offsetY
+                
+                if (qrX >= 0 && qrX < qrDisplaySize && qrY >= 0 && qrY < qrDisplaySize) {
+                    val matrixX = qrStartX + (qrX * qrWidth / qrDisplaySize)
+                    val matrixY = qrStartY + (qrY * qrHeight / qrDisplaySize)
+                    
+                    if (matrixX < bitMatrix.width && matrixY < bitMatrix.height) {
+                        val color = if (bitMatrix[matrixX, matrixY]) Color.BLACK else Color.WHITE
+                        bitmap.setPixel(x, y, color)
+                    }
+                }
+            }
+        }
     }
     
     /**
