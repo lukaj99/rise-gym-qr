@@ -1,0 +1,50 @@
+name: Hourly QR Scraper
+
+on:
+  schedule:
+    # Run every hour at different minutes to catch all time blocks
+    - cron: '0 */2 * * *'    # Every 2 hours at :00
+    - cron: '30 1,3,5,7,9,11,13,15,17,19,21,23 * * *'  # Odd hours at :30
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  scrape-qr:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Cache dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+    
+    - name: Install dependencies
+      run: |
+        pip install playwright python-dotenv
+        python -m playwright install chromium
+        python -m playwright install-deps
+    
+    - name: Run QR scraper
+      env:
+        RISE_USERNAME: ${{ secrets.RISE_USERNAME }}
+        RISE_PASSWORD: ${{ secrets.RISE_PASSWORD }}
+      run: |
+        python .github/scripts/github_qr_scraper.py
+    
+    - name: Commit and push if changes
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add scraped_qr_codes/
+        git diff --quiet && git diff --staged --quiet || (git commit -m "QR scrape: $(date -u +'%Y-%m-%d %H:%M UTC')" && git push)
