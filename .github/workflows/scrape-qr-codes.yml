@@ -2,8 +2,8 @@ name: Scrape Rise Gym QR Codes
 
 on:
   schedule:
-    # Run every hour at minute 15
-    - cron: '15 * * * *'
+    # Run every 30 minutes
+    - cron: '*/30 * * * *'
   workflow_dispatch:  # Allow manual trigger
 
 jobs:
