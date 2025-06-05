@@ -31,8 +31,8 @@ jobs:
     
     - name: Run QR scraper
       env:
-        USERNAME: ${{ secrets.RISE_GYM_USERNAME }}
-        PASSWORD: ${{ secrets.RISE_GYM_PASSWORD }}
+        RISE_GYM_EMAIL: ${{ secrets.RISE_GYM_EMAIL }}
+        RISE_GYM_PASSWORD: ${{ secrets.RISE_GYM_PASSWORD }}
       run: |
         python src/utils/qr_scraper.py
     
