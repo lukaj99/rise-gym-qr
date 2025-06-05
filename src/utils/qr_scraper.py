@@ -22,12 +22,13 @@ except ImportError:
 class RiseGymQRScraperFinal:
     def __init__(self):
         load_dotenv()
-        self.username = os.getenv('USERNAME')
-        self.password = os.getenv('PASSWORD')
+        # Try GitHub Actions env vars first, then fall back to .env
+        self.username = os.getenv('RISE_GYM_EMAIL') or os.getenv('USERNAME')
+        self.password = os.getenv('RISE_GYM_PASSWORD') or os.getenv('PASSWORD')
         self.login_url = "https://risegyms.ez-runner.com/login.aspx"
         
         if not self.username or not self.password:
-            raise ValueError("USERNAME and PASSWORD must be set in .env file")
+            raise ValueError("RISE_GYM_EMAIL and RISE_GYM_PASSWORD must be set as environment variables")
         
         # Ensure real_qr_codes directory exists
         os.makedirs("real_qr_codes", exist_ok=True)
