@@ -143,7 +143,19 @@ def analyze_qr_encoding():
     print("   - Mask pattern: Automatically selected")
 
 if __name__ == "__main__":
-    screenshot_path = "/Users/lukaj/Desktop/Screenshot 2025-06-05 at 19.31.40.png"
+    import sys
+    
+    # Use provided file or default
+    if len(sys.argv) > 1:
+        screenshot_path = sys.argv[1]
+    else:
+        screenshot_path = "/Users/lukaj/Desktop/Screenshot 2025-06-05 at 19.31.40.png"
+    
+    # Check if file exists
+    if not os.path.exists(screenshot_path):
+        print(f"❌ File not found: {screenshot_path}")
+        print("Usage: python decode_qr_screenshot.py <image_path>")
+        exit(1)
     
     # Decode the QR
     decode_qr_with_opencv(screenshot_path)

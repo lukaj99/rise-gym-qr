@@ -1,0 +1,609 @@
+[
+  {
+    "filename": "202506010144.svg",
+    "timestamp": "202506010144",
+    "content": "926806012025000001",
+    "parsed": {
+      "facility": "9268",
+      "date": "06/01/2025",
+      "time": "00:00:01",
+      "raw": "926806012025000001"
+    },
+    "status": "success"
+  },
+  {
+    "filename": "202506010748.svg",
+    "timestamp": "202506010748",
+    "content": "926806012025060000",
+    "parsed": {
+      "facility": "9268",
+      "date": "06/01/2025",
+      "time": "06:00:00",
+      "raw": "926806012025060000"
+    },
+    "status": "success"
+  },
+  {
+    "filename": "202506010749.svg",
+    "timestamp": "202506010749",
+    "content": "926806012025060000",
+    "parsed": {
+      "facility": "9268",
+      "date": "06/01/2025",
+      "time": "06:00:00",
+      "raw": "926806012025060000"
+    },
+    "status": "success"
+  },
+  {
+    "filename": "202506010750.svg",
+    "timestamp": "202506010750",
+    "content": "926806012025060000",
+    "parsed": {
+      "facility": "9268",
+      "date": "06/01/2025",
+      "time": "06:00:00",
+      "raw": "926806012025060000"
+    },
+    "status": "success"
+  },
+  {
+    "filename": "202506010751.svg",
+    "timestamp": "202506010751",
+    "content": "926806012025060000",
+    "parsed": {
+      "facility": "9268",
+      "date": "06/01/2025",
+      "time": "06:00:00",
+      "raw": "926806012025060000"
+    },
+    "status": "success"
+  },
+  {
+    "filename": "202506010754.svg",
+    "timestamp": "202506010754",
+    "content": "926806012025060000",
+    "parsed": {
+      "facility": "9268",
+      "date": "06/01/2025",
+      "time": "06:00:00",
+      "raw": "926806012025060000"
+    },
+    "status": "success"
+  },
+  {
+    "filename": "202506010806.svg",
+    "timestamp": "202506010806",
+    "content": "926806012025080000",
+    "parsed": {
+      "facility": "9268",
+      "date": "06/01/2025",
+      "time": "08:00:00",
+      "raw": "926806012025080000"
+    },
+    "status": "success"
+  },
+  {
+    "filename": "202506010824.svg",
+    "timestamp": "202506010824",
+    "content": "926806012025080000",
+    "parsed": {
+      "facility": "9268",
+      "date": "06/01/2025",
+      "time": "08:00:00",
+      "raw": "926806012025080000"
+    },
+    "status": "success"
+  },
+  {
+    "filename": "202506010831.svg",
+    "timestamp": "202506010831",
+    "content": "926806012025080000",
+    "parsed": {
+      "facility": "9268",
+      "date": "06/01/2025",
+      "time": "08:00:00",
+      "raw": "926806012025080000"
+    },
+    "status": "success"
+  },
+  {
+    "filename": "202506010834.svg",
+    "timestamp": "202506010834",
+    "content": "926806012025080000",
+    "parsed": {
+      "facility": "9268",
+      "date": "06/01/2025",
+      "time": "08:00:00",
+      "raw": "926806012025080000"
+    },
+    "status": "success"
+  },
+  {
+    "filename": "202506010841.svg",
+    "timestamp": "202506010841",
+    "content": "926806012025080000",
+    "parsed": {
+      "facility": "9268",
+      "date": "06/01/2025",
+      "time": "08:00:00",
+      "raw": "926806012025080000"
+    },
+    "status": "success"
+  },
+  {
+    "filename": "202506010844.svg",
+    "timestamp": "202506010844",
+    "content": "926806012025080000",
+    "parsed": {
+      "facility": "9268",
+      "date": "06/01/2025",
+      "time": "08:00:00",
+      "raw": "926806012025080000"
+    },
+    "status": "success"
+  },
+  {
+    "filename": "202506010851.svg",
+    "timestamp": "202506010851",
+    "content": "926806012025080000",
+    "parsed": {
+      "facility": "9268",
+      "date": "06/01/2025",
+      "time": "08:00:00",
+      "raw": "926806012025080000"
+    },
+    "status": "success"
+  },
+  {
+    "filename": "202506010854.svg",
+    "timestamp": "202506010854",
+    "content": "926806012025080000",
+    "parsed": {
+      "facility": "9268",
+      "date": "06/01/2025",
+      "time": "08:00:00",
+      "raw": "926806012025080000"
+    },
+    "status": "success"
+  },
+  {
+    "filename": "202506010901.svg",
+    "timestamp": "202506010901",
+    "content": "926806012025080000",
+    "parsed": {
+      "facility": "9268",
+      "date": "06/01/2025",
+      "time": "08:00:00",
+      "raw": "926806012025080000"
+    },
+    "status": "success"
+  },
+  {
+    "filename": "202506010904.svg",
+    "timestamp": "202506010904",
+    "content": "926806012025080000",
+    "parsed": {
+      "facility": "9268",
+      "date": "06/01/2025",
+      "time": "08:00:00",
+      "raw": "926806012025080000"
+    },
+    "status": "success"
+  },
+  {
+    "filename": "202506010911.svg",
+    "timestamp": "202506010911",
+    "content": "926806012025080000",
+    "parsed": {
+      "facility": "9268",
+      "date": "06/01/2025",
+      "time": "08:00:00",
+      "raw": "926806012025080000"
+    },
+    "status": "success"
+  },
+  {
+    "filename": "202506010914.svg",
+    "timestamp": "202506010914",
+    "content": "926806012025080000",
+    "parsed": {
+      "facility": "9268",
+      "date": "06/01/2025",
+      "time": "08:00:00",
+      "raw": "926806012025080000"
+    },
+    "status": "success"
+  },
+  {
+    "filename": "202506010921.svg",
+    "timestamp": "202506010921",
+    "content": "926806012025080000",
+    "parsed": {
+      "facility": "9268",
+      "date": "06/01/2025",
+      "time": "08:00:00",
+      "raw": "926806012025080000"
+    },
+    "status": "success"
+  },
+  {
+    "filename": "202506010924.svg",
+    "timestamp": "202506010924",
+    "content": "926806012025080000",
+    "parsed": {
+      "facility": "9268",
+      "date": "06/01/2025",
+      "time": "08:00:00",
+      "raw": "926806012025080000"
+    },
+    "status": "success"
+  },
+  {
+    "filename": "202506010932.svg",
+    "timestamp": "202506010932",
+    "content": "926806012025080000",
+    "parsed": {
+      "facility": "9268",
+      "date": "06/01/2025",
+      "time": "08:00:00",
+      "raw": "926806012025080000"
+    },
+    "status": "success"
+  },
+  {
+    "filename": "202506010934.svg",
+    "timestamp": "202506010934",
+    "content": "926806012025080000",
+    "parsed": {
+      "facility": "9268",
+      "date": "06/01/2025",
+      "time": "08:00:00",
+      "raw": "926806012025080000"
+    },
+    "status": "success"
+  },
+  {
+    "filename": "202506010942.svg",
+    "timestamp": "202506010942",
+    "content": "926806012025080000",
+    "parsed": {
+      "facility": "9268",
+      "date": "06/01/2025",
+      "time": "08:00:00",
+      "raw": "926806012025080000"
+    },
+    "status": "success"
+  },
+  {
+    "filename": "202506010944.svg",
+    "timestamp": "202506010944",
+    "content": "926806012025080000",
+    "parsed": {
+      "facility": "9268",
+      "date": "06/01/2025",
+      "time": "08:00:00",
+      "raw": "926806012025080000"
+    },
+    "status": "success"
+  },
+  {
+    "filename": "202506010952.svg",
+    "timestamp": "202506010952",
+    "content": "926806012025080000",
+    "parsed": {
+      "facility": "9268",
+      "date": "06/01/2025",
+      "time": "08:00:00",
+      "raw": "926806012025080000"
+    },
+    "status": "success"
+  },
+  {
+    "filename": "202506010954.svg",
+    "timestamp": "202506010954",
+    "content": "926806012025080000",
+    "parsed": {
+      "facility": "9268",
+      "date": "06/01/2025",
+      "time": "08:00:00",
+      "raw": "926806012025080000"
+    },
+    "status": "success"
+  },
+  {
+    "filename": "202506011002.svg",
+    "timestamp": "202506011002",
+    "content": "926806012025100000",
+    "parsed": {
+      "facility": "9268",
+      "date": "06/01/2025",
+      "time": "10:00:00",
+      "raw": "926806012025100000"
+    },
+    "status": "success"
+  },
+  {
+    "filename": "202506011003.svg",
+    "timestamp": "202506011003",
+    "content": "926806012025100000",
+    "parsed": {
+      "facility": "9268",
+      "date": "06/01/2025",
+      "time": "10:00:00",
+      "raw": "926806012025100000"
+    },
+    "status": "success"
+  },
+  {
+    "filename": "202506011004.svg",
+    "timestamp": "202506011004",
+    "content": "926806012025100000",
+    "parsed": {
+      "facility": "9268",
+      "date": "06/01/2025",
+      "time": "10:00:00",
+      "raw": "926806012025100000"
+    },
+    "status": "success"
+  },
+  {
+    "filename": "202506011012.svg",
+    "timestamp": "202506011012",
+    "content": "926806012025100000",
+    "parsed": {
+      "facility": "9268",
+      "date": "06/01/2025",
+      "time": "10:00:00",
+      "raw": "926806012025100000"
+    },
+    "status": "success"
+  },
+  {
+    "filename": "202506011015.svg",
+    "timestamp": "202506011015",
+    "content": "926806012025100000",
+    "parsed": {
+      "facility": "9268",
+      "date": "06/01/2025",
+      "time": "10:00:00",
+      "raw": "926806012025100000"
+    },
+    "status": "success"
+  },
+  {
+    "filename": "202506011022.svg",
+    "timestamp": "202506011022",
+    "content": "926806012025100000",
+    "parsed": {
+      "facility": "9268",
+      "date": "06/01/2025",
+      "time": "10:00:00",
+      "raw": "926806012025100000"
+    },
+    "status": "success"
+  },
+  {
+    "filename": "202506011025.svg",
+    "timestamp": "202506011025",
+    "content": "926806012025100000",
+    "parsed": {
+      "facility": "9268",
+      "date": "06/01/2025",
+      "time": "10:00:00",
+      "raw": "926806012025100000"
+    },
+    "status": "success"
+  },
+  {
+    "filename": "202506011032.svg",
+    "timestamp": "202506011032",
+    "content": "926806012025100000",
+    "parsed": {
+      "facility": "9268",
+      "date": "06/01/2025",
+      "time": "10:00:00",
+      "raw": "926806012025100000"
+    },
+    "status": "success"
+  },
+  {
+    "filename": "202506011035.svg",
+    "timestamp": "202506011035",
+    "content": "926806012025100000",
+    "parsed": {
+      "facility": "9268",
+      "date": "06/01/2025",
+      "time": "10:00:00",
+      "raw": "926806012025100000"
+    },
+    "status": "success"
+  },
+  {
+    "filename": "202506011042.svg",
+    "timestamp": "202506011042",
+    "content": "926806012025100000",
+    "parsed": {
+      "facility": "9268",
+      "date": "06/01/2025",
+      "time": "10:00:00",
+      "raw": "926806012025100000"
+    },
+    "status": "success"
+  },
+  {
+    "filename": "202506011045.svg",
+    "timestamp": "202506011045",
+    "content": "926806012025100000",
+    "parsed": {
+      "facility": "9268",
+      "date": "06/01/2025",
+      "time": "10:00:00",
+      "raw": "926806012025100000"
+    },
+    "status": "success"
+  },
+  {
+    "filename": "202506011052.svg",
+    "timestamp": "202506011052",
+    "content": "926806012025100000",
+    "parsed": {
+      "facility": "9268",
+      "date": "06/01/2025",
+      "time": "10:00:00",
+      "raw": "926806012025100000"
+    },
+    "status": "success"
+  },
+  {
+    "filename": "202506011055.svg",
+    "timestamp": "202506011055",
+    "content": "926806012025100000",
+    "parsed": {
+      "facility": "9268",
+      "date": "06/01/2025",
+      "time": "10:00:00",
+      "raw": "926806012025100000"
+    },
+    "status": "success"
+  },
+  {
+    "filename": "202506011102.svg",
+    "timestamp": "202506011102",
+    "content": "926806012025100000",
+    "parsed": {
+      "facility": "9268",
+      "date": "06/01/2025",
+      "time": "10:00:00",
+      "raw": "926806012025100000"
+    },
+    "status": "success"
+  },
+  {
+    "filename": "202506011105.svg",
+    "timestamp": "202506011105",
+    "content": "926806012025100000",
+    "parsed": {
+      "facility": "9268",
+      "date": "06/01/2025",
+      "time": "10:00:00",
+      "raw": "926806012025100000"
+    },
+    "status": "success"
+  },
+  {
+    "filename": "202506011113.svg",
+    "timestamp": "202506011113",
+    "content": "926806012025100000",
+    "parsed": {
+      "facility": "9268",
+      "date": "06/01/2025",
+      "time": "10:00:00",
+      "raw": "926806012025100000"
+    },
+    "status": "success"
+  },
+  {
+    "filename": "202506011115.svg",
+    "timestamp": "202506011115",
+    "content": "926806012025100000",
+    "parsed": {
+      "facility": "9268",
+      "date": "06/01/2025",
+      "time": "10:00:00",
+      "raw": "926806012025100000"
+    },
+    "status": "success"
+  },
+  {
+    "filename": "202506012000.svg",
+    "timestamp": "202506012000",
+    "content": "926806012025200000",
+    "parsed": {
+      "facility": "9268",
+      "date": "06/01/2025",
+      "time": "20:00:00",
+      "raw": "926806012025200000"
+    },
+    "status": "success"
+  },
+  {
+    "filename": "202506020042.svg",
+    "timestamp": "202506020042",
+    "content": "926806022025000001",
+    "parsed": {
+      "facility": "9268",
+      "date": "06/02/2025",
+      "time": "00:00:01",
+      "raw": "926806022025000001"
+    },
+    "status": "success"
+  },
+  {
+    "filename": "202506041837.svg",
+    "timestamp": "202506041837",
+    "content": "926806042025180000",
+    "parsed": {
+      "facility": "9268",
+      "date": "06/04/2025",
+      "time": "18:00:00",
+      "raw": "926806042025180000"
+    },
+    "status": "success"
+  },
+  {
+    "filename": "202506042334.svg",
+    "timestamp": "202506042334",
+    "content": null,
+    "parsed": null,
+    "status": "failed"
+  },
+  {
+    "filename": "202506051923.svg",
+    "timestamp": "202506051923",
+    "content": "926806052025180001",
+    "parsed": {
+      "facility": "9268",
+      "date": "06/05/2025",
+      "time": "18:00:01",
+      "raw": "926806052025180001"
+    },
+    "status": "success"
+  },
+  {
+    "filename": "202506051959.svg",
+    "timestamp": "202506051959",
+    "content": "926806052025180001",
+    "parsed": {
+      "facility": "9268",
+      "date": "06/05/2025",
+      "time": "18:00:01",
+      "raw": "926806052025180001"
+    },
+    "status": "success"
+  },
+  {
+    "filename": "202506062330.svg",
+    "timestamp": "202506062330",
+    "content": "926806062025220001",
+    "parsed": {
+      "facility": "9268",
+      "date": "06/06/2025",
+      "time": "22:00:01",
+      "raw": "926806062025220001"
+    },
+    "status": "success"
+  },
+  {
+    "filename": "202506062335.svg",
+    "timestamp": "202506062335",
+    "content": "926806062025220001",
+    "parsed": {
+      "facility": "9268",
+      "date": "06/06/2025",
+      "time": "22:00:01",
+      "raw": "926806062025220001"
+    },
+    "status": "success"
+  }
+]

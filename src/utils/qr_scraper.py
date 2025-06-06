@@ -139,12 +139,44 @@ class RiseGymQRScraperFinal:
                 if not headless:
                     page.screenshot(path="debug_after_login.png")
                 
+                # In CI, always take screenshot for debugging
+                if os.getenv('CI'):
+                    page.screenshot(path="debug_ci_after_login.png")
+                    print("📸 Debug screenshot saved: debug_ci_after_login.png")
+                
                 # Check current URL
                 current_url = page.url
                 print(f"📍 Current URL: {current_url}")
                 
+                # Check if login was successful
+                if "login" in current_url.lower():
+                    print("⚠️  Still on login page - authentication may have failed")
+                    # Get page title for more context
+                    title = page.title()
+                    print(f"📄 Page title: {title}")
+                    
+                    # Check for error messages
+                    error_selectors = [
+                        '.error', '.alert', '.warning', '.message',
+                        '[class*="error"]', '[class*="alert"]', '[id*="error"]'
+                    ]
+                    for selector in error_selectors:
+                        try:
+                            error_element = page.query_selector(selector)
+                            if error_element:
+                                error_text = error_element.text_content()
+                                if error_text and error_text.strip():
+                                    print(f"❌ Error message found: {error_text.strip()}")
+                                    break
+                        except:
+                            pass
+                
                 # Look for QR code
                 print("🔍 Looking for QR code...")
+                
+                # Take a debug screenshot
+                if not headless:
+                    page.screenshot(path="debug_page_loaded.png")
                 
                 # Try to find SVG elements
                 svg_elements = page.query_selector_all('svg')
@@ -153,33 +185,71 @@ class RiseGymQRScraperFinal:
                     # Wait a bit more and try again
                     page.wait_for_timeout(3000)
                     svg_elements = page.query_selector_all('svg')
+                    
+                # Also check for img elements that might contain QR codes
+                img_elements = page.query_selector_all('img[src*="QR"], img[src*="qr"], img[alt*="QR"], img[alt*="qr"]')
+                if img_elements:
+                    print(f"📷 Found {len(img_elements)} QR image elements")
                 
                 if svg_elements:
                     print(f"✅ Found {len(svg_elements)} SVG elements")
                     
-                    # Get the largest SVG (likely the QR code)
-                    largest_svg = None
-                    largest_size = 0
+                    # Wait for QR code SVG to have proper dimensions (21x21 grid = 441+ rectangles for version 1)
+                    # or at least 200+ rectangles for a valid QR code
+                    print("⏳ Waiting for QR code to fully render...")
+                    try:
+                        page.wait_for_function(
+                            '''() => {
+                                const svgs = document.querySelectorAll('svg');
+                                for (const svg of svgs) {
+                                    const rects = svg.querySelectorAll('rect');
+                                    // QR codes have many small rectangles, logos have few
+                                    if (rects.length > 200) {
+                                        return true;
+                                    }
+                                }
+                                return false;
+                            }''',
+                            timeout=10000
+                        )
+                    except PlaywrightTimeout:
+                        print("⚠️  Timeout waiting for QR code to render fully")
                     
-                    for svg in svg_elements:
+                    # Find the QR code SVG specifically (has many rectangles)
+                    qr_svg = None
+                    max_rectangles = 0
+                    
+                    for i, svg in enumerate(svg_elements):
                         try:
+                            # Count rectangles directly in browser for accuracy
+                            rect_count = svg.evaluate('(element) => element.querySelectorAll("rect").length')
                             html = svg.evaluate('(element) => element.outerHTML')
-                            if len(html) > largest_size:
-                                largest_size = len(html)
-                                largest_svg = html
+                            
+                            print(f"   SVG {i+1}: {len(html)} characters, {rect_count} rectangles")
+                            
+                            # QR codes have 200+ rectangles, logos typically have < 50
+                            if rect_count > 200 and rect_count > max_rectangles:
+                                max_rectangles = rect_count
+                                qr_svg = html
+                                
+                            # Debug preview
+                            if len(html) < 1000:
+                                preview = html[:200].replace('\n', ' ')
+                                print(f"   Preview: {preview}...")
                         except:
                             continue
                     
-                    if largest_svg and largest_size > 1000:
+                    if qr_svg:
                         # Save QR code
-                        timestamp = datetime.now().strftime("%Y%m%d%H%M")
-                        filename = f"real_qr_codes/{timestamp}.svg"
+                        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+                        filename = f"test_qr_codes/{timestamp}.svg"
                         
                         with open(filename, 'w') as f:
-                            f.write(largest_svg)
+                            f.write(qr_svg)
                         
                         print(f"💾 QR code saved: {filename}")
-                        print(f"📏 Size: {largest_size} characters")
+                        print(f"📏 Size: {len(qr_svg)} characters")
+                        print(f"📊 Rectangles: {max_rectangles}")
                         
                         # Update database
                         self.update_database()
