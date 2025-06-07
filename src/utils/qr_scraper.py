@@ -84,14 +84,19 @@ class RiseGymQRScraperFinal:
                         elif inp_type == 'password':
                             print(f"   {i+1}. type='{inp_type}', name='{inp_name}', id='{inp_id}', placeholder='{inp_placeholder}'")
                     
-                    # Also list buttons
+                    # Also list buttons and clickable elements
                     buttons = page.query_selector_all('button')
-                    print(f"🔘 Found {len(buttons)} buttons:")
-                    for i, btn in enumerate(buttons[:5]):  # Show first 5
-                        btn_text = btn.text_content() or 'no-text'
-                        btn_id = btn.get_attribute('id') or 'no-id'
-                        btn_class = btn.get_attribute('class') or 'no-class'
-                        print(f"   {i+1}. text='{btn_text.strip()}', id='{btn_id}', class='{btn_class}'")
+                    print(f"🔘 Found {len(buttons)} button elements")
+                    
+                    # Look for elements with "Log in" text
+                    login_elements = page.query_selector_all('*:has-text("Log in")')
+                    print(f"🔍 Found {len(login_elements)} elements with 'Log in' text:")
+                    for i, elem in enumerate(login_elements[:3]):
+                        tag_name = elem.evaluate('el => el.tagName')
+                        elem_id = elem.get_attribute('id') or 'no-id'
+                        elem_class = elem.get_attribute('class') or 'no-class'
+                        elem_type = elem.get_attribute('type') or 'no-type'
+                        print(f"   {i+1}. <{tag_name.lower()}> id='{elem_id}', class='{elem_class}', type='{elem_type}'")
                 
                 # Find and fill email field
                 # Try multiple selectors
@@ -141,18 +146,19 @@ class RiseGymQRScraperFinal:
                 
                 # Method 1: Look for specific login button
                 login_selectors = [
-                    'button:has-text("Log in")',  # Exact case as shown in screenshot
+                    '*:has-text("Log in"):not(:has(*))',  # Any element with exact text "Log in"
+                    'a:has-text("Log in")',  # Link styled as button
+                    'input[type="button"][value="Log in"]',  # Input button
+                    'input[type="submit"][value="Log in"]',
+                    'div:has-text("Log in"):not(:has(div))',  # Div button
+                    'span:has-text("Log in")',  # Span button
+                    'button:has-text("Log in")',  
                     'button:has-text("Log In")',
-                    'button:has-text("LOGIN")',
-                    'button:has-text("Login")',
-                    'button:has-text("Sign In")',
                     'input[type="submit"][value*="Login" i]',
                     'input[type="submit"][value*="Log" i]',
-                    '#LoginButton',  # Common ID for login buttons
+                    '#LoginButton',
                     'button[type="submit"]',
-                    'input[type="submit"]',
-                    'button.btn-primary',  # Common class
-                    'button.login-button'
+                    'input[type="submit"]'
                 ]
                 
                 for selector in login_selectors:
