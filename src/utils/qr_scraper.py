@@ -73,11 +73,16 @@ class RiseGymQRScraperFinal:
                 if os.getenv('CI'):
                     inputs = page.query_selector_all('input')
                     print(f"📝 Found {len(inputs)} input fields:")
-                    for i, inp in enumerate(inputs[:5]):  # Show first 5
+                    for i, inp in enumerate(inputs):  # Show all
                         inp_type = inp.get_attribute('type') or 'text'
                         inp_name = inp.get_attribute('name') or 'unnamed'
                         inp_placeholder = inp.get_attribute('placeholder') or 'no-placeholder'
-                        print(f"   {i+1}. type='{inp_type}', name='{inp_name}', placeholder='{inp_placeholder}'")
+                        inp_id = inp.get_attribute('id') or 'no-id'
+                        inp_value = inp.get_attribute('value') or ''
+                        if inp_type not in ['hidden', 'password']:
+                            print(f"   {i+1}. type='{inp_type}', name='{inp_name}', id='{inp_id}', placeholder='{inp_placeholder}', value='{inp_value[:20]}...'")
+                        elif inp_type == 'password':
+                            print(f"   {i+1}. type='{inp_type}', name='{inp_name}', id='{inp_id}', placeholder='{inp_placeholder}'")
                 
                 # Find and fill email field
                 # Try multiple selectors
@@ -113,6 +118,13 @@ class RiseGymQRScraperFinal:
                 # Wait a moment before submitting
                 page.wait_for_timeout(1000)
                 
+                # Debug: Check if fields are actually filled
+                if os.getenv('CI'):
+                    email_val = page.evaluate('document.querySelector("input[placeholder*=\'Email\' i]")?.value || "NOT FOUND"')
+                    pass_filled = page.evaluate('document.querySelector("input[type=\'password\']")?.value?.length > 0')
+                    print(f"📧 Email field value: {email_val}")
+                    print(f"🔑 Password field filled: {pass_filled}")
+                
                 print("🚪 Submitting login form...")
                 
                 # Try multiple ways to submit the form
@@ -120,13 +132,18 @@ class RiseGymQRScraperFinal:
                 
                 # Method 1: Look for specific login button
                 login_selectors = [
-                    'button:has-text("Login")',
+                    'button:has-text("Log in")',  # Exact case as shown in screenshot
                     'button:has-text("Log In")',
+                    'button:has-text("LOGIN")',
+                    'button:has-text("Login")',
                     'button:has-text("Sign In")',
                     'input[type="submit"][value*="Login" i]',
                     'input[type="submit"][value*="Log" i]',
+                    '#LoginButton',  # Common ID for login buttons
                     'button[type="submit"]',
-                    'input[type="submit"]'
+                    'input[type="submit"]',
+                    'button.btn-primary',  # Common class
+                    'button.login-button'
                 ]
                 
                 for selector in login_selectors:
