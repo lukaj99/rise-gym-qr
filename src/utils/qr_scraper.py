@@ -83,6 +83,15 @@ class RiseGymQRScraperFinal:
                             print(f"   {i+1}. type='{inp_type}', name='{inp_name}', id='{inp_id}', placeholder='{inp_placeholder}', value='{inp_value[:20]}...'")
                         elif inp_type == 'password':
                             print(f"   {i+1}. type='{inp_type}', name='{inp_name}', id='{inp_id}', placeholder='{inp_placeholder}'")
+                    
+                    # Also list buttons
+                    buttons = page.query_selector_all('button')
+                    print(f"🔘 Found {len(buttons)} buttons:")
+                    for i, btn in enumerate(buttons[:5]):  # Show first 5
+                        btn_text = btn.text_content() or 'no-text'
+                        btn_id = btn.get_attribute('id') or 'no-id'
+                        btn_class = btn.get_attribute('class') or 'no-class'
+                        print(f"   {i+1}. text='{btn_text.strip()}', id='{btn_id}', class='{btn_class}'")
                 
                 # Find and fill email field
                 # Try multiple selectors
@@ -156,6 +165,21 @@ class RiseGymQRScraperFinal:
                     except:
                         continue
                 
+                if not submit_success:
+                    # Fallback: Try clicking the visible "Log in" button directly
+                    try:
+                        # Wait a moment for any dynamic rendering
+                        page.wait_for_timeout(500)
+                        
+                        # Find and click the button by its exact text
+                        login_btn = page.locator('button:text-is("Log in")')
+                        if login_btn.count() > 0:
+                            login_btn.click()
+                            print("✅ Clicked 'Log in' button by exact text")
+                            submit_success = True
+                    except:
+                        pass
+                    
                 if not submit_success:
                     # Fallback: Press Enter
                     try:
