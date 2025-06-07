@@ -5,10 +5,8 @@ Uses Playwright with proper form handling
 """
 
 import os
-import time
 import subprocess
 from datetime import datetime
-from pathlib import Path
 from dotenv import load_dotenv
 
 try:
@@ -71,6 +69,16 @@ class RiseGymQRScraperFinal:
                 
                 print("🔍 Finding login form elements...")
                 
+                # In CI, list all input fields for debugging
+                if os.getenv('CI'):
+                    inputs = page.query_selector_all('input')
+                    print(f"📝 Found {len(inputs)} input fields:")
+                    for i, inp in enumerate(inputs[:5]):  # Show first 5
+                        inp_type = inp.get_attribute('type') or 'text'
+                        inp_name = inp.get_attribute('name') or 'unnamed'
+                        inp_placeholder = inp.get_attribute('placeholder') or 'no-placeholder'
+                        print(f"   {i+1}. type='{inp_type}', name='{inp_name}', placeholder='{inp_placeholder}'")
+                
                 # Find and fill email field
                 # Try multiple selectors
                 email_filled = False
@@ -108,18 +116,46 @@ class RiseGymQRScraperFinal:
                 print("🚪 Submitting login form...")
                 
                 # Try multiple ways to submit the form
-                try:
-                    # Method 1: Press Enter on password field
-                    page.keyboard.press('Enter')
-                except:
+                submit_success = False
+                
+                # Method 1: Look for specific login button
+                login_selectors = [
+                    'button:has-text("Login")',
+                    'button:has-text("Log In")',
+                    'button:has-text("Sign In")',
+                    'input[type="submit"][value*="Login" i]',
+                    'input[type="submit"][value*="Log" i]',
+                    'button[type="submit"]',
+                    'input[type="submit"]'
+                ]
+                
+                for selector in login_selectors:
                     try:
-                        # Method 2: Click submit button
-                        page.click('button[type="submit"], input[type="submit"], button:has-text("Log In")')
+                        if page.query_selector(selector):
+                            page.click(selector)
+                            submit_success = True
+                            print(f"✅ Clicked login button: {selector}")
+                            break
                     except:
-                        # Method 3: Submit via JavaScript
+                        continue
+                
+                if not submit_success:
+                    # Fallback: Press Enter
+                    try:
+                        page.keyboard.press('Enter')
+                        print("✅ Submitted via Enter key")
+                    except:
+                        # Last resort: JavaScript submit
                         page.evaluate('document.forms[0].submit()')
+                        print("✅ Submitted via JavaScript")
                 
                 print("⏳ Waiting for dashboard to load...")
+                
+                # First wait for any navigation
+                try:
+                    page.wait_for_load_state('load', timeout=10000)
+                except:
+                    pass
                 
                 # Wait for navigation with multiple conditions
                 try:
@@ -127,8 +163,10 @@ class RiseGymQRScraperFinal:
                     page.wait_for_function(
                         '''() => {
                             return window.location.href.includes('BookingPortal') || 
+                                   window.location.href.includes('booking') ||
+                                   window.location.href.includes('dashboard') ||
                                    document.querySelector('svg') !== null ||
-                                   document.body.textContent.toLowerCase().includes('hello');
+                                   document.querySelector('img[src*="QR" i]') !== null;
                         }''',
                         timeout=15000
                     )
@@ -257,7 +295,7 @@ class RiseGymQRScraperFinal:
                         browser.close()
                         return filename
                     else:
-                        print(f"❌ SVG too small ({largest_size} chars) or not found")
+                        print("❌ No valid QR code SVG found (need 200+ rectangles)")
                 else:
                     print("❌ No SVG elements found on page")
                     
@@ -280,7 +318,7 @@ class RiseGymQRScraperFinal:
             result = subprocess.run(['python', 'qr_database.py'], 
                                   capture_output=True, text=True, cwd='.')
             if result.returncode == 0:
-                print(f"📊 Database updated successfully")
+                print("📊 Database updated successfully")
             else:
                 print(f"⚠️  Database update warning: {result.stderr}")
         except Exception as e:
