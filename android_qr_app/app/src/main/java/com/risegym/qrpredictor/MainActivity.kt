@@ -65,6 +65,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 import android.content.SharedPreferences
 import android.content.Context
+import android.util.Log
 
 class MainActivity : ComponentActivity() {
     private var originalBrightness: Float = -1f
@@ -195,6 +196,9 @@ fun QRPredictorScreen() {
                 
                 result.fold(
                     onSuccess = { (timestamp, svgContent) ->
+                        Log.d("GitHubQR", "Successfully fetched QR: $timestamp")
+                        Log.d("GitHubQR", "SVG content length: ${svgContent.length}")
+                        
                         val bitmap = SVGUtils.parseSVGToBitmap(svgContent, 800)
                         if (bitmap != null) {
                             qrBitmap?.recycle()
@@ -210,9 +214,11 @@ fun QRPredictorScreen() {
                             minutesUntilUpdate = 30 // GitHub updates every 30 min
                         } else {
                             errorMessage = "Failed to parse SVG"
+                            Log.e("GitHubQR", "Failed to parse SVG content")
                         }
                     },
                     onFailure = { e ->
+                        Log.e("GitHubQR", "Failed to fetch QR", e)
                         errorMessage = "Error: ${e.message}"
                         verificationStatus = "ERROR"
                     }
@@ -602,12 +608,44 @@ fun QRPredictorScreen() {
                 Column(
                     modifier = Modifier.padding(16.dp)
                 ) {
-                    Text(
-                        text = "QR Code Data",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Medium,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "QR Code Data",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                        
+                        // Debug button for GitHub mode
+                        if (useGitHubQR && errorMessage != null) {
+                            TextButton(
+                                onClick = {
+                                    // Test connection with debug service
+                                    scope.launch {
+                                        isLoading = true
+                                        errorMessage = "Testing connection..."
+                                        
+                                        val debugService = GitHubQRServiceDebug(githubToken)
+                                        try {
+                                            val debugInfo = debugService.testGitHubConnection()
+                                            errorMessage = debugInfo
+                                        } catch (e: Exception) {
+                                            errorMessage = "Debug failed: ${e.message}"
+                                        }
+                                        isLoading = false
+                                    }
+                                }
+                            ) {
+                                Text("Debug", fontSize = 12.sp)
+                            }
+                        }
+                    }
+                    
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
                     Text(
                         text = qrContent,
                         fontSize = 14.sp,
