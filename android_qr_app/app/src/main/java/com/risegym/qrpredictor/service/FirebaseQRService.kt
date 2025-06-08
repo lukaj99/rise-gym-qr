@@ -14,7 +14,7 @@ class FirebaseQRService {
         private const val LATEST_PATH = "latest"
     }
     
-    private val database = FirebaseDatabase.getInstance()
+    private val database = FirebaseDatabase.getInstance("https://rise-gym-qr-default-rtdb.europe-west1.firebasedatabase.app")
     private val qrCodesRef = database.getReference(QR_CODES_PATH)
     private val latestRef = database.getReference(LATEST_PATH)
     
