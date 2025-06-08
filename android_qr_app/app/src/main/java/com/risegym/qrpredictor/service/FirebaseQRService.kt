@@ -1,129 +1,191 @@
 package com.risegym.qrpredictor.service
 
 import android.util.Log
-import com.google.firebase.database.*
-import kotlinx.coroutines.channels.awaitClose
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.callbackFlow
+import com.google.firebase.storage.FirebaseStorage
+import com.google.firebase.storage.StorageReference
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
+import java.text.SimpleDateFormat
+import java.util.*
 
+/**
+ * Firebase-based QR code service for fetching QR codes from Firebase Storage
+ * This is the sole source of QR codes, replacing all local generation and other cloud sources
+ */
 class FirebaseQRService {
     companion object {
         private const val TAG = "FirebaseQRService"
-        private const val QR_CODES_PATH = "qr_codes"
-        private const val LATEST_PATH = "latest"
+        private const val QR_FOLDER = "qr_codes"
+        private const val LATEST_QR_FILE = "latest.svg"
+        private const val METADATA_FILE = "metadata.json"
     }
-    
-    private val database = FirebaseDatabase.getInstance("https://rise-gym-qr-default-rtdb.europe-west1.firebasedatabase.app")
-    private val qrCodesRef = database.getReference(QR_CODES_PATH)
-    private val latestRef = database.getReference(LATEST_PATH)
-    
+
+    private val storage = FirebaseStorage.getInstance()
+    private val storageRef = storage.reference
+
     data class QRCodeData(
-        val timestamp: String = "",
-        val svgContent: String = "",
-        val bitmapBase64: String = "",
-        val pattern: String = "",
-        val uploadedAt: Long = 0
+        val svgContent: String,
+        val timestamp: Long,
+        val timeSlot: String,
+        val expiresAt: Long
     )
-    
+
     /**
-     * Listen for real-time updates to the latest QR code
+     * Fetch the latest QR code from Firebase Storage
      */
-    fun observeLatestQRCode(): Flow<Result<QRCodeData>> = callbackFlow {
-        val listener = object : ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-                try {
-                    val qrCodeData = snapshot.getValue(QRCodeData::class.java)
-                    if (qrCodeData != null) {
-                        trySend(Result.success(qrCodeData))
-                    } else {
-                        trySend(Result.failure(Exception("No QR code data available")))
-                    }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Error parsing QR code data", e)
-                    trySend(Result.failure(e))
-                }
-            }
+    suspend fun getLatestQRCode(): Result<QRCodeData> = withContext(Dispatchers.IO) {
+        try {
+            Log.d(TAG, "Fetching latest QR code from Firebase")
             
-            override fun onCancelled(error: DatabaseError) {
-                Log.e(TAG, "Firebase database error: ${error.message}")
-                trySend(Result.failure(Exception(error.message)))
-            }
-        }
-        
-        latestRef.addValueEventListener(listener)
-        
-        awaitClose {
-            latestRef.removeEventListener(listener)
-        }
-    }
-    
-    /**
-     * Get the latest QR code once (no real-time updates)
-     */
-    suspend fun getLatestQRCode(): Result<QRCodeData> {
-        return try {
-            val snapshot = latestRef.get().await()
-            val qrCodeData = snapshot.getValue(QRCodeData::class.java)
-            if (qrCodeData != null) {
-                Result.success(qrCodeData)
-            } else {
-                Result.failure(Exception("No QR code data available"))
-            }
+            // Get reference to the latest QR code
+            val qrRef = storageRef.child("$QR_FOLDER/$LATEST_QR_FILE")
+            
+            // Download the SVG content
+            val maxDownloadSize = 1024L * 1024L // 1MB max
+            val svgBytes = qrRef.getBytes(maxDownloadSize).await()
+            val svgContent = String(svgBytes)
+            
+            // Get metadata
+            val metadata = qrRef.metadata.await()
+            val timestamp = metadata.updatedTimeMillis
+            val timeSlot = metadata.getCustomMetadata("timeSlot") ?: getCurrentTimeSlot()
+            val expiresAt = metadata.getCustomMetadata("expiresAt")?.toLongOrNull() 
+                ?: calculateExpirationTime()
+            
+            Log.d(TAG, "Successfully fetched QR code for time slot: $timeSlot")
+            
+            Result.success(QRCodeData(
+                svgContent = svgContent,
+                timestamp = timestamp,
+                timeSlot = timeSlot,
+                expiresAt = expiresAt
+            ))
         } catch (e: Exception) {
-            Log.e(TAG, "Error fetching latest QR code", e)
+            Log.e(TAG, "Error fetching QR code from Firebase", e)
             Result.failure(e)
         }
     }
-    
+
     /**
-     * Get all QR codes (for history/debugging)
+     * Get QR code for a specific time slot
      */
-    suspend fun getAllQRCodes(): Result<List<QRCodeData>> {
-        return try {
-            val snapshot = qrCodesRef.get().await()
-            val qrCodes = mutableListOf<QRCodeData>()
+    suspend fun getQRCodeForTimeSlot(timeSlot: String): Result<QRCodeData> = withContext(Dispatchers.IO) {
+        try {
+            Log.d(TAG, "Fetching QR code for time slot: $timeSlot")
             
-            snapshot.children.forEach { dataSnapshot ->
-                dataSnapshot.getValue(QRCodeData::class.java)?.let {
-                    qrCodes.add(it)
-                }
-            }
+            // Try to get time slot specific file first
+            val slotFileName = "slot_${timeSlot.replace(":", "")}.svg"
+            val qrRef = storageRef.child("$QR_FOLDER/$slotFileName")
             
-            // Sort by timestamp descending
-            qrCodes.sortByDescending { it.timestamp }
-            Result.success(qrCodes)
-        } catch (e: Exception) {
-            Log.e(TAG, "Error fetching all QR codes", e)
-            Result.failure(e)
-        }
-    }
-    
-    /**
-     * Test Firebase connection
-     */
-    suspend fun testConnection(): Result<Boolean> {
-        return try {
-            // Try to read a simple value
-            val snapshot = database.getReference(".info/connected").get().await()
-            val connected = snapshot.getValue(Boolean::class.java) ?: false
-            Result.success(connected)
-        } catch (e: Exception) {
-            Log.e(TAG, "Firebase connection test failed", e)
-            Result.failure(e)
-        }
-    }
-    
-    /**
-     * Initialize Firebase with custom database URL if needed
-     */
-    fun initialize(databaseUrl: String? = null) {
-        if (databaseUrl != null) {
-            try {
-                database.reference.database.useEmulator("10.0.2.2", 9000) // For local testing
+            return@withContext try {
+                val svgBytes = qrRef.getBytes(1024L * 1024L).await()
+                val svgContent = String(svgBytes)
+                val metadata = qrRef.metadata.await()
+                
+                Result.success(QRCodeData(
+                    svgContent = svgContent,
+                    timestamp = metadata.updatedTimeMillis,
+                    timeSlot = timeSlot,
+                    expiresAt = calculateExpirationTime()
+                ))
             } catch (e: Exception) {
-                Log.w(TAG, "Firebase already initialized or emulator not available")
+                // Fallback to latest if specific slot not found
+                Log.w(TAG, "Time slot specific QR not found, falling back to latest")
+                getLatestQRCode()
             }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error fetching QR code for time slot", e)
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Check if cached QR code is still valid
+     */
+    fun isQRCodeValid(timestamp: Long, expiresAt: Long): Boolean {
+        val now = System.currentTimeMillis()
+        return now < expiresAt
+    }
+
+    /**
+     * Get current time slot (2-hour blocks)
+     */
+    private fun getCurrentTimeSlot(): String {
+        val calendar = Calendar.getInstance()
+        val hour = calendar.get(Calendar.HOUR_OF_DAY)
+        val slotHour = (hour / 2) * 2
+        return String.format("%02d:00-%02d:59", slotHour, slotHour + 1)
+    }
+
+    /**
+     * Calculate when the current QR code expires
+     */
+    private fun calculateExpirationTime(): Long {
+        val calendar = Calendar.getInstance()
+        val currentHour = calendar.get(Calendar.HOUR_OF_DAY)
+        val nextSlotHour = ((currentHour / 2) + 1) * 2
+        
+        calendar.set(Calendar.HOUR_OF_DAY, nextSlotHour)
+        calendar.set(Calendar.MINUTE, 0)
+        calendar.set(Calendar.SECOND, 0)
+        calendar.set(Calendar.MILLISECOND, 0)
+        
+        return calendar.timeInMillis
+    }
+
+    /**
+     * Listen for real-time updates to QR codes
+     */
+    fun addQRUpdateListener(onUpdate: (QRCodeData) -> Unit) {
+        val qrRef = storageRef.child("$QR_FOLDER/$LATEST_QR_FILE")
+        
+        // Firebase Storage doesn't have real-time listeners like Realtime Database
+        // So we'll need to poll or use Cloud Functions to trigger updates
+        // For now, this is a placeholder for future implementation
+        Log.d(TAG, "Real-time updates not yet implemented for Storage")
+    }
+
+    /**
+     * Get all available time slots
+     */
+    suspend fun getAvailableTimeSlots(): Result<List<String>> = withContext(Dispatchers.IO) {
+        try {
+            val listResult = storageRef.child(QR_FOLDER).listAll().await()
+            val timeSlots = mutableListOf<String>()
+            
+            for (item in listResult.items) {
+                val name = item.name
+                if (name.startsWith("slot_") && name.endsWith(".svg")) {
+                    val slot = name.removePrefix("slot_").removeSuffix(".svg")
+                    timeSlots.add(slot.chunked(2).joinToString(":"))
+                }
+            }
+            
+            Result.success(timeSlots.sorted())
+        } catch (e: Exception) {
+            Log.e(TAG, "Error listing time slots", e)
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Prefetch QR codes for upcoming time slots
+     */
+    suspend fun prefetchUpcomingQRCodes() = withContext(Dispatchers.IO) {
+        try {
+            val currentSlot = getCurrentTimeSlot()
+            val currentHour = currentSlot.substring(0, 2).toInt()
+            
+            // Prefetch next 2 time slots
+            for (i in 1..2) {
+                val nextHour = (currentHour + (i * 2)) % 24
+                val nextSlot = String.format("%02d:00-%02d:59", nextHour, nextHour + 1)
+                
+                getQRCodeForTimeSlot(nextSlot)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error prefetching QR codes", e)
         }
     }
 }

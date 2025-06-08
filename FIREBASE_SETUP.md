@@ -1,119 +1,194 @@
-# Firebase Setup Guide
+# Firebase Setup Guide for Rise Gym QR App
 
-This guide explains how to set up Firebase Realtime Database for instant QR code syncing.
+## Overview
+This guide explains how to set up Firebase for the Rise Gym QR Android application. The app now uses Firebase Storage as the sole source for QR codes, eliminating all local generation and other cloud sources.
 
-## Benefits of Firebase Integration
-
-- **Instant Updates**: QR codes appear on your phone the moment they're scraped
-- **No Polling**: No need to repeatedly check GitHub API
-- **Lower Battery Usage**: More efficient than polling
-- **Real-time Sync**: Multiple devices stay in sync automatically
-- **Free Tier**: Generous free tier is perfect for personal use
+## Prerequisites
+- Firebase account
+- Android Studio installed
+- Basic knowledge of Firebase console
 
 ## Setup Steps
 
 ### 1. Create Firebase Project
-
-1. Go to [Firebase Console](https://console.firebase.google.com)
+1. Go to [Firebase Console](https://console.firebase.google.com/)
 2. Click "Create a project"
-3. Name it (e.g., "rise-gym-qr")
-4. Disable Google Analytics (not needed)
-5. Click "Create project"
+3. Name it "RiseGymQR" or similar
+4. Follow the setup wizard (you can disable Google Analytics if not needed)
 
-### 2. Set up Realtime Database
+### 2. Add Android App to Firebase
+1. In Firebase Console, click "Add app" and select Android
+2. Enter package name: `com.risegym.qrpredictor`
+3. Download the `google-services.json` file
+4. Place it in `android_qr_app/app/` directory
 
-1. In Firebase Console, click "Realtime Database" in the left menu
-2. Click "Create Database"
-3. Choose a location close to you
-4. Start in "test mode" for now (we'll secure it later)
-5. Click "Enable"
+### 3. Enable Firebase Storage
+1. In Firebase Console, go to "Storage" in the left menu
+2. Click "Get Started"
+3. Choose security rules (start with test mode for development):
+   ```
+   rules_version = '2';
+   service firebase.storage {
+     match /b/{bucket}/o {
+       match /qr_codes/{allPaths=**} {
+         allow read: if true;
+         allow write: if request.auth != null;
+       }
+     }
+   }
+   ```
 
-### 3. Get Database URL
+### 4. Storage Structure
+Create the following folder structure in Firebase Storage:
+```
+qr_codes/
+  ├── latest.svg          # Always contains the current QR code
+  ├── slot_0000-0159.svg  # Time slot specific QR codes
+  ├── slot_0200-0359.svg
+  ├── slot_0400-0559.svg
+  ├── slot_0600-0759.svg
+  ├── slot_0800-0959.svg
+  ├── slot_1000-1159.svg
+  ├── slot_1200-1359.svg
+  ├── slot_1400-1559.svg
+  ├── slot_1600-1759.svg
+  ├── slot_1800-1959.svg
+  ├── slot_2000-2159.svg
+  └── slot_2200-2359.svg
+```
 
-1. In the Realtime Database section, you'll see your database URL
-2. It looks like: `https://YOUR-PROJECT-ID.firebaseio.com`
-3. Copy this URL
+### 5. Upload QR Codes
+You can upload QR codes manually through Firebase Console or use the provided Python script:
 
-### 4. Configure Android App
+```python
+import firebase_admin
+from firebase_admin import credentials, storage
+import os
 
-1. In Firebase Console, click the gear icon → "Project settings"
-2. Click "Add app" → Android
-3. Enter package name: `com.risegym.qrpredictor`
-4. Register the app
-5. Download `google-services.json`
-6. Replace the placeholder file in `android_qr_app/app/google-services.json`
+# Initialize Firebase Admin
+cred = credentials.Certificate('path/to/serviceAccountKey.json')
+firebase_admin.initialize_app(cred, {
+    'storageBucket': 'your-project-id.appspot.com'
+})
 
-### 5. Set up GitHub Actions Secrets
+bucket = storage.bucket()
 
-Add these secrets to your GitHub repository:
+# Upload a QR code
+def upload_qr_code(local_path, storage_path, time_slot):
+    blob = bucket.blob(storage_path)
+    
+    # Set metadata
+    metadata = {
+        'timeSlot': time_slot,
+        'contentType': 'image/svg+xml'
+    }
+    blob.metadata = metadata
+    
+    # Upload file
+    blob.upload_from_filename(local_path)
+    print(f"Uploaded {local_path} to {storage_path}")
 
-1. Go to your GitHub repo → Settings → Secrets and variables → Actions
-2. Add new repository secrets:
-   - `FIREBASE_DATABASE_URL`: Your database URL from step 3
-   - `FIREBASE_AUTH_TOKEN`: (Optional) For secured databases
+# Example usage
+upload_qr_code('qr_1800.svg', 'qr_codes/latest.svg', '18:00-19:59')
+upload_qr_code('qr_1800.svg', 'qr_codes/slot_1800-1959.svg', '18:00-19:59')
+```
 
-### 6. Secure Your Database (Important!)
+### 6. App Configuration
+The app is already configured to use Firebase. Key components:
 
-Replace the default rules with these to ensure only your GitHub Actions can write:
+- **FirebaseQRService.kt**: Handles all Firebase Storage operations
+- **MainActivity.kt**: Simplified to only fetch from Firebase
+- **SVGUtils.kt**: Parses SVG files to display as bitmaps
 
-```json
-{
-  "rules": {
-    ".read": true,
-    ".write": false,
-    "latest": {
-      ".write": "auth != null || true"  // Temporarily allow writes
-    },
-    "qr_codes": {
-      ".write": "auth != null || true"  // Temporarily allow writes
+### 7. Testing
+1. Build and run the app
+2. Check Firebase Console for read operations
+3. Verify QR codes are displayed correctly
+4. Monitor error logs in Android Studio
+
+## Key Features
+
+### Automatic Updates
+- App checks for new QR codes every 30 seconds
+- Fetches new QR at the start of each 2-hour time slot
+- Prefetches upcoming time slots for smooth transitions
+
+### Error Handling
+- Graceful fallback if specific time slot not found
+- Clear error messages displayed to user
+- Automatic retry on network failures
+
+### Performance
+- SVG files are lightweight (~15KB)
+- Bitmaps are recycled properly to prevent memory leaks
+- Firebase Storage provides fast CDN delivery
+
+## Security Considerations
+
+### Production Rules
+For production, update Firebase Storage rules:
+```
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /qr_codes/{allPaths=**} {
+      // Only allow read access
+      allow read: if true;
+      // Only allow write from backend/admin
+      allow write: if false;
     }
   }
 }
 ```
 
-For production, you should:
-1. Enable Firebase Authentication
-2. Create a service account
-3. Use proper authentication in GitHub Actions
-
-### 7. Test the Setup
-
-1. Manually trigger the GitHub Actions workflow
-2. Check Firebase Console → Realtime Database → Data
-3. You should see QR codes appearing under `latest` and `qr_codes`
-4. Open the Android app and select "Firebase Real-time" option
-5. QR codes should appear instantly!
-
-## Database Structure
-
-```
-{
-  "latest": {
-    "timestamp": "20250108120000",
-    "svgContent": "<svg>...</svg>",
-    "pattern": "926801082025120000",
-    "uploadedAt": 1736337600000
-  },
-  "qr_codes": {
-    "20250108120000": { ... },
-    "20250108100000": { ... },
-    ...
-  }
-}
-```
+### Best Practices
+1. Use Firebase App Check to prevent unauthorized access
+2. Set up monitoring alerts for unusual read patterns
+3. Implement caching to reduce Firebase usage costs
+4. Use Cloud Functions to automatically update QR codes
 
 ## Troubleshooting
 
-- **No data in Firebase**: Check GitHub Actions logs for errors
-- **App not updating**: Make sure you replaced `google-services.json`
-- **Permission denied**: Check database rules
-- **Connection failed**: Verify database URL is correct
+### Common Issues
 
-## Cost Considerations
+1. **"No QR code available"**
+   - Check if `latest.svg` exists in Firebase Storage
+   - Verify internet connection
+   - Check Firebase Storage rules
 
-Firebase Realtime Database free tier includes:
-- 1GB stored
-- 10GB/month downloaded
-- 100 simultaneous connections
+2. **"Failed to parse QR code"**
+   - Ensure uploaded files are valid SVG format
+   - Check SVG content structure (should contain rect elements)
 
-For personal use with QR codes updating every 30 minutes, you'll never exceed the free tier.
+3. **"Error: Permission denied"**
+   - Review Firebase Storage security rules
+   - Ensure app has internet permission in AndroidManifest.xml
+
+### Debug Mode
+Enable debug logging by adding to MainActivity:
+```kotlin
+if (BuildConfig.DEBUG) {
+    FirebaseStorage.getInstance().setLogLevel(Logger.Level.DEBUG)
+}
+```
+
+## Cost Optimization
+
+Firebase Storage free tier includes:
+- 5GB storage
+- 1GB/day download
+- 20K/day upload operations
+- 50K/day download operations
+
+To optimize costs:
+1. Use appropriate SVG compression
+2. Implement client-side caching
+3. Set up lifecycle rules to delete old QR codes
+4. Monitor usage in Firebase Console
+
+## Next Steps
+
+1. Set up Cloud Functions to automatically generate and upload QR codes
+2. Implement Firebase Performance Monitoring
+3. Add Firebase Crashlytics for error tracking
+4. Consider Firebase Remote Config for feature flags
