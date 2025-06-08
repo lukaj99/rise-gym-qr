@@ -345,7 +345,7 @@ class RiseGymQRScraperFinal:
                     if qr_svg:
                         # Save QR code
                         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-                        filename = f"test_qr_codes/{timestamp}.svg"
+                        filename = f"real_qr_codes/{timestamp}.svg"
                         
                         with open(filename, 'w') as f:
                             f.write(qr_svg)
