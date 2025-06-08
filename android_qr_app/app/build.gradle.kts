@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.jetbrainsKotlinAndroid)
     id("com.google.gms.google-services")
+    id("org.jetbrains.kotlin.plugin.compose") version "2.1.0"
 }
 
 android {
@@ -64,32 +65,24 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
-    implementation("androidx.compose.material:material-icons-extended:1.5.4")
-    implementation("com.google.android.material:material:1.11.0")
+    implementation("androidx.compose.material:material-icons-extended")
+    implementation("com.google.android.material:material:1.12.0")
     
-    // Firebase
-    implementation(platform("com.google.firebase:firebase-bom:32.7.0"))
+    // Firebase (Latest BOM as of June 2025)
+    implementation(platform("com.google.firebase:firebase-bom:33.14.0"))
     implementation("com.google.firebase:firebase-storage-ktx")
     implementation("com.google.firebase:firebase-analytics-ktx")
     
-    // QR Code generation
-    implementation(libs.zxing.android.embedded)
-    implementation(libs.zxing.core)
-    
-    // Web scraping dependencies (keeping for SVG parsing)
-    implementation("com.squareup.okhttp3:okhttp:4.12.0")
-    implementation("com.squareup.okhttp3:okhttp-urlconnection:4.12.0")
-    
-    // WorkManager for background tasks
-    implementation("androidx.work:work-runtime-ktx:2.9.0")
-    
-    // Coroutines
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
+    // Coroutines (Latest stable)
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.8.0")
 
-    // Coil for image loading
-    implementation("io.coil-kt:coil-compose:2.6.0")
-    implementation("io.coil-kt:coil-svg:2.6.0")
+    // Coil for image loading (Latest)
+    implementation("io.coil-kt:coil-compose:2.7.0")
+    implementation("io.coil-kt:coil-svg:2.7.0")
+    
+    // AndroidSVG for SVG parsing (Latest)
+    implementation("com.caverock:androidsvg-aar:1.4")
     
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

@@ -31,11 +31,36 @@ class RiseGymQRScraperFinal:
         # Ensure real_qr_codes directory exists
         os.makedirs("real_qr_codes", exist_ok=True)
     
-    def scrape_qr_code(self, headless=True):
-        """Scrape QR code using Playwright"""
+    def scrape_qr_code(self, headless=True, max_retries=3):
+        """Scrape QR code using Playwright with retry logic"""
         print("🚀 Starting QR code scrape with Playwright...")
         
+        for attempt in range(max_retries):
+            if attempt > 0:
+                print(f"\n🔄 Retry attempt {attempt + 1} of {max_retries}...")
+                # Wait before retry
+                import time
+                time.sleep(5 * attempt)  # Progressive backoff
+            
+            try:
+                result = self._scrape_attempt(headless)
+                if result:
+                    return result
+                elif attempt < max_retries - 1:
+                    print("⚠️  Scrape attempt failed, will retry...")
+            except Exception as e:
+                print(f"❌ Error during scrape attempt {attempt + 1}: {e}")
+                if attempt < max_retries - 1:
+                    print("⚠️  Will retry after delay...")
+                else:
+                    raise
+        
+        return None
+    
+    def _scrape_attempt(self, headless=True):
+        """Single scrape attempt"""
         with sync_playwright() as p:
+            browser = None
             try:
                 # Launch browser
                 print("🌐 Launching browser...")
@@ -361,8 +386,12 @@ class RiseGymQRScraperFinal:
                         return filename
                     else:
                         print("❌ No valid QR code SVG found (need 200+ rectangles)")
+                        # Save debug screenshot on failure
+                        self._save_failure_screenshot(page, "no_valid_qr")
                 else:
                     print("❌ No SVG elements found on page")
+                    # Save debug screenshot on failure
+                    self._save_failure_screenshot(page, "no_svg_elements")
                     
                     # Debug: print page content snippet
                     content = page.content()
@@ -371,11 +400,28 @@ class RiseGymQRScraperFinal:
                 browser.close()
                 return None
                 
+            except PlaywrightTimeout as e:
+                print(f"⏱️  Timeout error: {e}")
+                self._save_failure_screenshot(page if 'page' in locals() else None, "timeout_error")
+                raise
             except Exception as e:
-                print(f"❌ Error during scraping: {e}")
-                if 'browser' in locals():
+                print(f"❌ Error during scraping: {type(e).__name__}: {e}")
+                self._save_failure_screenshot(page if 'page' in locals() else None, "general_error")
+                raise
+            finally:
+                if browser:
                     browser.close()
-                return None
+    
+    def _save_failure_screenshot(self, page, error_type):
+        """Save screenshot on failure for debugging"""
+        if page:
+            try:
+                timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+                filename = f"debug_{error_type}_{timestamp}.png"
+                page.screenshot(path=filename)
+                print(f"📸 Debug screenshot saved: {filename}")
+            except Exception as e:
+                print(f"⚠️  Could not save debug screenshot: {e}")
     
     def update_database(self):
         """Update the QR code database"""
@@ -392,21 +438,31 @@ class RiseGymQRScraperFinal:
 def main():
     """Main function"""
     import argparse
+    import sys
     
     parser = argparse.ArgumentParser(description='Rise Gym QR Scraper (Final)')
     parser.add_argument('--debug', action='store_true', 
                        help='Run in debug mode (visible browser)')
+    parser.add_argument('--retries', type=int, default=3,
+                       help='Number of retry attempts (default: 3)')
     
     args = parser.parse_args()
     
-    scraper = RiseGymQRScraperFinal()
-    result = scraper.scrape_qr_code(headless=not args.debug)
-    
-    if result:
-        print(f"✅ Success! QR code scraped: {result}")
-        return True
-    else:
-        print("❌ Failed to scrape QR code")
+    try:
+        scraper = RiseGymQRScraperFinal()
+        result = scraper.scrape_qr_code(headless=not args.debug, max_retries=args.retries)
+        
+        if result:
+            print(f"\n✅ Success! QR code scraped: {result}")
+            return True
+        else:
+            print("\n❌ Failed to scrape QR code after all retries")
+            return False
+    except KeyboardInterrupt:
+        print("\n⚠️  Scraping interrupted by user")
+        sys.exit(1)
+    except Exception as e:
+        print(f"\n💥 Fatal error: {type(e).__name__}: {e}")
         return False
 
 if __name__ == "__main__":

@@ -29,8 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.google.firebase.Firebase
-import com.google.firebase.initialize
+import com.google.firebase.FirebaseApp
 import com.risegym.qrpredictor.ui.theme.RiseGymQRPredictorTheme
 import com.risegym.qrpredictor.service.FirebaseQRService
 import com.risegym.qrpredictor.utils.SVGUtils
@@ -48,8 +47,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         
-        // Initialize Firebase
-        Firebase.initialize(this)
+        FirebaseApp.initializeApp(this)
         
         // Save original brightness settings
         saveOriginalBrightness()

@@ -21,7 +21,7 @@ class FirebaseQRService {
         private const val METADATA_FILE = "metadata.json"
     }
 
-    private val storage = FirebaseStorage.getInstance()
+    private val storage = FirebaseStorage.getInstance("gs://rise-gym-qr.firebasestorage.app")
     private val storageRef = storage.reference
 
     data class QRCodeData(
@@ -41,10 +41,24 @@ class FirebaseQRService {
             // Get reference to the latest QR code
             val qrRef = storageRef.child("$QR_FOLDER/$LATEST_QR_FILE")
             
+            // Check if file exists first
+            try {
+                qrRef.metadata.await()
+            } catch (e: Exception) {
+                Log.e(TAG, "Latest QR file does not exist in Firebase Storage")
+                return@withContext Result.failure(Exception("No QR code available in Firebase"))
+            }
+            
             // Download the SVG content
             val maxDownloadSize = 1024L * 1024L // 1MB max
             val svgBytes = qrRef.getBytes(maxDownloadSize).await()
             val svgContent = String(svgBytes)
+            
+            // Validate SVG content
+            if (svgContent.isBlank()) {
+                Log.e(TAG, "Downloaded SVG content is empty")
+                return@withContext Result.failure(Exception("QR code content is empty"))
+            }
             
             // Get metadata
             val metadata = qrRef.metadata.await()
