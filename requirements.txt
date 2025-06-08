@@ -1,5 +1,8 @@
 # Firebase Admin SDK for uploading QR codes
 firebase-admin==6.1.0
 
+# Environment variable management
+python-dotenv==1.0.0
+
 # Optional: For SVG to PNG conversion if needed
 # cairosvg==2.7.1
