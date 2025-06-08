@@ -45,6 +45,14 @@ jobs:
       run: |
         python generate_qr_manifest.py
     
+    - name: Upload to Firebase
+      if: success()
+      env:
+        FIREBASE_DATABASE_URL: ${{ secrets.FIREBASE_DATABASE_URL }}
+        FIREBASE_AUTH_TOKEN: ${{ secrets.FIREBASE_AUTH_TOKEN }}
+      run: |
+        python src/utils/firebase_uploader.py || echo "Firebase upload failed (non-critical)"
+    
     - name: Upload debug artifacts on failure
       if: failure()
       uses: actions/upload-artifact@v4

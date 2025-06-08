@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "602378901128",
+    "firebase_url": "https://rise-gym-qr-default-rtdb.europe-west1.firebasedatabase.app",
+    "project_id": "rise-gym-qr",
+    "storage_bucket": "rise-gym-qr.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:602378901128:android:501e36b6e1158ecae1f13d",
+        "android_client_info": {
+          "package_name": "com.risegym.qrpredictor"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAJ44wu-73ct0y7QZpkxsjct67Ycj9zpNQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

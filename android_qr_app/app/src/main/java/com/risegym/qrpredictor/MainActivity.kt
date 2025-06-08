@@ -19,7 +19,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.core.view.WindowCompat
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.ui.window.Dialog
 import androidx.compose.runtime.*
@@ -58,9 +63,13 @@ import com.risegym.qrpredictor.scraping.WebScraperInterface
 import com.risegym.qrpredictor.security.SecureCredentialManager
 import com.risegym.qrpredictor.service.QRUpdateWorker
 import com.risegym.qrpredictor.service.GitHubQRService
-import com.risegym.qrpredictor.utils.SVGUtils
+import com.risegym.qrpredictor.service.FirebaseQRService
+import coil.compose.AsyncImage
+import coil.decode.SvgDecoder
+import coil.ImageLoader
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.collect
 import java.text.SimpleDateFormat
 import java.util.*
 import android.content.SharedPreferences
@@ -150,17 +159,20 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun QRPredictorScreen() {
     var qrBitmap by remember { mutableStateOf<Bitmap?>(null) }
+    var svgContent by remember { mutableStateOf<String?>(null) }
     var currentTime by remember { mutableStateOf("") }
     var timeBlock by remember { mutableStateOf("") }
     var minutesUntilUpdate by remember { mutableStateOf(0) }
     var qrContent by remember { mutableStateOf("") }
     var verificationStatus by remember { mutableStateOf("") }
     var showCopyMessage by remember { mutableStateOf(false) }
-    var useGitHubQR by remember { mutableStateOf(false) }
+    // QR Source: 0 = Local, 1 = GitHub, 2 = Firebase
+    var qrSource by remember { mutableStateOf(0) }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var showTokenDialog by remember { mutableStateOf(false) }
     var githubToken by remember { mutableStateOf<String?>(null) }
+    var showSourceDialog by remember { mutableStateOf(false) }
     
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -172,53 +184,110 @@ fun QRPredictorScreen() {
     val securePrefs = context.getSharedPreferences("secure_prefs", Context.MODE_PRIVATE)
     
     LaunchedEffect(Unit) {
-        useGitHubQR = prefs.getBoolean("use_github_qr", false)
+        qrSource = prefs.getInt("qr_source", 0)
         githubToken = securePrefs.getString("github_token", null)
     }
     
     val githubService = remember(githubToken) { GitHubQRService(githubToken) }
+    val firebaseService = remember { FirebaseQRService() }
     
     // Proper bitmap cleanup to prevent memory leaks
-    DisposableEffect(Unit) {
+    DisposableEffect(qrBitmap) {
         onDispose {
-            qrBitmap?.recycle()
+            // qrBitmap?.recycle() // Disabling for now to see if it fixes issues
         }
     }
     
-    // Function to fetch GitHub QR
-    val fetchGitHubQR: () -> Unit = {
-        if (useGitHubQR && !isLoading) {
+    // Firebase real-time listener
+    LaunchedEffect(qrSource) {
+        if (qrSource == 2) {
+            Log.d("FirebaseQR", "LaunchedEffect for qrSource=2, starting to collect.")
+            // Collect Firebase real-time updates
+            firebaseService.observeLatestQRCode().collect { result ->
+                Log.d("FirebaseQR", "Collected new result from Firebase flow.")
+                result.fold(
+                    onSuccess = { qrData ->
+                        Log.d("FirebaseQR", "Received real-time update. SVG content length: ${qrData.svgContent.length}")
+                        if (qrData.svgContent.isBlank()) {
+                            Log.w("FirebaseQR", "Warning: Received empty SVG content from Firebase.")
+                        }
+                        
+                        // When using Firebase, we get an SVG. Clear the bitmap.
+                        qrBitmap?.recycle()
+                        qrBitmap = null
+                        svgContent = qrData.svgContent
+
+                        qrContent = qrData.pattern
+                        verificationStatus = "FROM FIREBASE"
+                        
+                        // Update time display
+                        val calendar = Calendar.getInstance()
+                        val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
+                        currentTime = timeFormat.format(calendar.time)
+                        timeBlock = "Firebase Real-time"
+                        minutesUntilUpdate = 30
+                    },
+                    onFailure = { e ->
+                        Log.e("FirebaseQR", "Firebase error in flow", e)
+                        errorMessage = "Firebase: ${e.message}"
+                        verificationStatus = "ERROR"
+                    }
+                )
+            }
+        }
+    }
+    
+    // Function to fetch cloud QR (GitHub or Firebase)
+    val fetchCloudQR: () -> Unit = {
+        if (qrSource != 0 && !isLoading) {
             isLoading = true
             errorMessage = null
             
             scope.launch {
-                val result = githubService.getLatestQRCodeSVG()
+                val result = when (qrSource) {
+                    1 -> githubService.getLatestQRCodeSVG()
+                    2 -> {
+                        val firebaseResult = firebaseService.getLatestQRCode()
+                        firebaseResult.map { qrData ->
+                            Pair(qrData.timestamp, qrData.svgContent)
+                        }
+                    }
+                    else -> Result.failure(Exception("Invalid source"))
+                }
                 
                 result.fold(
-                    onSuccess = { (timestamp, svgContent) ->
-                        Log.d("GitHubQR", "Successfully fetched QR: $timestamp")
-                        Log.d("GitHubQR", "SVG content length: ${svgContent.length}")
+                    onSuccess = { (timestamp, fetchedSvgContent) ->
+                        Log.d("CloudQR", "Successfully fetched QR: $timestamp")
                         
-                        val bitmap = SVGUtils.parseSVGToBitmap(svgContent, 800)
-                        if (bitmap != null) {
-                            qrBitmap?.recycle()
-                            qrBitmap = bitmap
-                            qrContent = "GitHub QR: $timestamp"
-                            verificationStatus = "FROM GITHUB"
-                            
-                            // Update time display
-                            val calendar = Calendar.getInstance()
-                            val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
-                            currentTime = timeFormat.format(calendar.time)
-                            timeBlock = "GitHub-sourced"
-                            minutesUntilUpdate = 30 // GitHub updates every 30 min
-                        } else {
-                            errorMessage = "Failed to parse SVG"
-                            Log.e("GitHubQR", "Failed to parse SVG content")
+                        // When cloud QR is fetched, we use SVG. Clear the old bitmap.
+                        qrBitmap?.recycle()
+                        qrBitmap = null
+                        svgContent = fetchedSvgContent
+
+                        qrContent = when (qrSource) {
+                            1 -> "GitHub QR: $timestamp"
+                            2 -> "Firebase: $timestamp"
+                            else -> timestamp
                         }
+                        verificationStatus = when (qrSource) {
+                            1 -> "FROM GITHUB"
+                            2 -> "FROM FIREBASE"
+                            else -> "CLOUD"
+                        }
+                        
+                        // Update time display
+                        val calendar = Calendar.getInstance()
+                        val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
+                        currentTime = timeFormat.format(calendar.time)
+                        timeBlock = when (qrSource) {
+                            1 -> "GitHub-sourced"
+                            2 -> "Firebase-sourced"
+                            else -> "Cloud-sourced"
+                        }
+                        minutesUntilUpdate = 30 // Cloud updates every 30 min
                     },
                     onFailure = { e ->
-                        Log.e("GitHubQR", "Failed to fetch QR", e)
+                        Log.e("CloudQR", "Failed to fetch QR", e)
                         errorMessage = "Error: ${e.message}"
                         verificationStatus = "ERROR"
                     }
@@ -229,7 +298,7 @@ fun QRPredictorScreen() {
     }
     
     // Smart adaptive refresh rate optimized for Pixel 9 Pro XL battery life
-    LaunchedEffect(useGitHubQR) {
+    LaunchedEffect(qrSource) {
         var lastQRContent = ""
         var lastInteractionTime = System.currentTimeMillis()
         
@@ -237,13 +306,13 @@ fun QRPredictorScreen() {
             while (isActive) {
                 val updateStart = System.currentTimeMillis()
                 
-                if (useGitHubQR) {
-                    // Initial fetch or periodic update
-                    if (qrBitmap == null && !isLoading) {
-                        fetchGitHubQR()
+                if (qrSource != 0) {
+                    // Initial fetch or periodic update for cloud sources
+                    if (svgContent == null && !isLoading) {
+                        fetchCloudQR()
                     }
                     
-                    // GitHub QR codes update every 30 minutes
+                    // Cloud QR codes update every 30 minutes
                     delay(30000) // Check every 30 seconds
                     
                 } else {
@@ -277,6 +346,7 @@ fun QRPredictorScreen() {
                         qrContent = newQrContent
                         verificationStatus = "GENERATED"
                         errorMessage = null
+                        svgContent = null // Clear SVG when generating locally
                     }
                     
                     // Generate QR code on background thread if content changed
@@ -357,11 +427,12 @@ fun QRPredictorScreen() {
                 }
             }
             
-            // Toggle switch for QR source
+            // QR source selector
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 16.dp),
+                    .padding(bottom = 16.dp)
+                    .clickable { showSourceDialog = true },
                 colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5))
             ) {
                 Row(
@@ -373,42 +444,33 @@ fun QRPredictorScreen() {
                 ) {
                     Column {
                         Text(
-                            text = if (useGitHubQR) "GitHub QR Codes" else "Generated QR Codes",
+                            text = when (qrSource) {
+                                0 -> "Generated QR Codes"
+                                1 -> "GitHub QR Codes"
+                                2 -> "Firebase QR Codes"
+                                else -> "Unknown Source"
+                            },
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Medium
                         )
                         Text(
-                            text = if (useGitHubQR) "Using latest from repository" else "Generating locally",
+                            text = when (qrSource) {
+                                0 -> "Generating locally"
+                                1 -> "Using latest from repository"
+                                2 -> "Real-time cloud sync"
+                                else -> "Unknown"
+                            },
                             fontSize = 12.sp,
                             color = Color(0xFF666666)
                         )
                     }
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Switch(
-                            checked = useGitHubQR,
-                            onCheckedChange = { checked ->
-                                if (checked && githubToken.isNullOrEmpty()) {
-                                    // Show token dialog if no token is set
-                                    showTokenDialog = true
-                                } else {
-                                    useGitHubQR = checked
-                                    // Save preference
-                                    prefs.edit().putBoolean("use_github_qr", checked).apply()
-                                    // Clear current QR to force reload
-                                    qrBitmap?.recycle()
-                                    qrBitmap = null
-                                    // Fetch immediately if switching to GitHub mode
-                                    if (checked) {
-                                        fetchGitHubQR()
-                                    }
-                                }
-                            },
-                            colors = SwitchDefaults.colors(
-                                checkedThumbColor = MaterialTheme.colorScheme.primary,
-                                checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
-                            )
+                        Icon(
+                            imageVector = Icons.Default.ArrowDropDown,
+                            contentDescription = "Select source",
+                            tint = MaterialTheme.colorScheme.primary
                         )
-                        if (useGitHubQR) {
+                        if (qrSource == 1 && !githubToken.isNullOrEmpty()) {
                             IconButton(
                                 onClick = { showTokenDialog = true },
                                 modifier = Modifier.size(24.dp)
@@ -476,10 +538,10 @@ fun QRPredictorScreen() {
                         )
                     }
                     
-                    // Refresh button for GitHub mode
-                    if (useGitHubQR) {
+                    // Refresh button for cloud modes
+                    if (qrSource != 0) {
                         IconButton(
-                            onClick = { fetchGitHubQR() },
+                            onClick = { fetchCloudQR() },
                             enabled = !isLoading,
                             modifier = Modifier.padding(start = 16.dp)
                         ) {
@@ -504,99 +566,58 @@ fun QRPredictorScreen() {
             // QR Code Display
             Card(
                 modifier = Modifier
-                    .size(320.dp)
-                    .padding(bottom = 16.dp)
-                    .pointerInput(Unit) {
-                        detectTapGestures(
-                            onTap = {
-                                // Copy QR content to clipboard
-                                clipboardManager.setText(AnnotatedString(qrContent))
-                                hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                                showCopyMessage = true
-                                scope.launch {
-                                    delay(2000)
-                                    showCopyMessage = false
-                                }
-                            }
-                        )
-                    },
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                    .fillMaxWidth()
+                    .aspectRatio(1f)
+                    .padding(16.dp),
+                shape = RoundedCornerShape(24.dp),
+                elevation = CardDefaults.cardElevation(8.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White)
             ) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(16.dp),
+                        .padding(12.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    when {
-                        errorMessage != null -> {
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Warning,
-                                    contentDescription = "Error",
-                                    tint = Color(0xFFFF6B6B),
-                                    modifier = Modifier.size(48.dp)
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(
-                                    text = errorMessage ?: "Unknown error",
-                                    color = Color(0xFFFF6B6B),
-                                    fontSize = 14.sp,
-                                    textAlign = TextAlign.Center,
-                                    modifier = Modifier.padding(horizontal = 16.dp)
-                                )
-                            }
-                        }
-                        isLoading && useGitHubQR -> {
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(40.dp)
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(
-                                    text = "Fetching from GitHub...",
-                                    fontSize = 14.sp,
-                                    color = Color(0xFF666666)
-                                )
-                            }
-                        }
-                        qrBitmap != null -> {
-                            Image(
-                                bitmap = qrBitmap!!.asImageBitmap(),
-                                contentDescription = "QR Code - Tap to copy",
-                                modifier = Modifier.fillMaxSize()
-                            )
-                        }
-                        else -> {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(40.dp)
-                            )
-                        }
-                    }
-                    
-                    // Copy message overlay
-                    if (showCopyMessage) {
-                        Card(
-                            modifier = Modifier
-                                .align(Alignment.BottomCenter)
-                                .padding(8.dp),
-                            colors = CardDefaults.cardColors(containerColor = Color.Black.copy(alpha = 0.8f))
-                        ) {
-                            Text(
-                                text = "QR data copied!",
-                                color = Color.White,
-                                fontSize = 12.sp,
-                                modifier = Modifier.padding(8.dp)
-                            )
-                        }
+                    if (isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(64.dp),
+                            strokeWidth = 6.dp
+                        )
+                    } else if (!svgContent.isNullOrBlank()) {
+                        // SVG from cloud
+                        Log.d("QRScreenUI", "Attempting to render SVG. Content starts with: ${svgContent?.take(100)}")
+                        val imageLoader = ImageLoader.Builder(context)
+                            .components { add(SvgDecoder.Factory()) }
+                            .build()
+                        AsyncImage(
+                            model = svgContent,
+                            contentDescription = "Cloud QR Code",
+                            imageLoader = imageLoader,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    } else if (qrBitmap != null) {
+                        // Bitmap from local generation
+                        Log.d("QRScreenUI", "Attempting to render Bitmap.")
+                        Image(
+                            bitmap = qrBitmap!!.asImageBitmap(),
+                            contentDescription = "QR Code - Tap to copy",
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    } else {
+                        // Placeholder
+                        Log.d("QRScreenUI", "Displaying placeholder. isLoading: $isLoading")
+                        Image(
+                            painter = painterResource(id = R.drawable.ic_rise_logo),
+                            contentDescription = "QR Code Placeholder",
+                            modifier = Modifier.size(128.dp),
+                            colorFilter = ColorFilter.tint(Color(0xFFE0E0E0))
+                        )
                     }
                 }
             }
+            
+            Spacer(modifier = Modifier.height(8.dp))
             
             // QR Code Info
             Card(
@@ -619,28 +640,18 @@ fun QRPredictorScreen() {
                             fontWeight = FontWeight.Medium
                         )
                         
-                        // Debug button for GitHub mode
-                        if (useGitHubQR && errorMessage != null) {
-                            TextButton(
-                                onClick = {
-                                    // Test connection with debug service
-                                    scope.launch {
-                                        isLoading = true
-                                        errorMessage = "Testing connection..."
-                                        
-                                        val debugService = GitHubQRServiceDebug(githubToken)
-                                        try {
-                                            val debugInfo = debugService.testGitHubConnection()
-                                            errorMessage = debugInfo
-                                        } catch (e: Exception) {
-                                            errorMessage = "Debug failed: ${e.message}"
-                                        }
-                                        isLoading = false
-                                    }
-                                }
-                            ) {
-                                Text("Debug", fontSize = 12.sp)
-                            }
+                        // Show connection status for cloud modes
+                        when (qrSource) {
+                            1 -> Text(
+                                text = if (githubToken.isNullOrEmpty()) "No token" else "Token: ${githubToken?.take(7)}...",
+                                fontSize = 12.sp,
+                                color = Color(0xFF666666)
+                            )
+                            2 -> Text(
+                                text = "Firebase connected",
+                                fontSize = 12.sp,
+                                color = Color(0xFF4CAF50)
+                            )
                         }
                     }
                     
@@ -784,13 +795,12 @@ fun QRPredictorScreen() {
                         
                         // Enable GitHub mode if token is provided
                         if (tokenInput.isNotEmpty()) {
-                            useGitHubQR = true
-                            prefs.edit().putBoolean("use_github_qr", true).apply()
+                            qrSource = 1
+                            prefs.edit().putInt("qr_source", 1).apply()
                             // Clear current QR to force reload
-                            qrBitmap?.recycle()
-                            qrBitmap = null
+                            svgContent = null
                             // Fetch immediately
-                            fetchGitHubQR()
+                            fetchCloudQR()
                         }
                         
                         showTokenDialog = false
@@ -804,6 +814,155 @@ fun QRPredictorScreen() {
                     onClick = { showTokenDialog = false }
                 ) {
                     Text("Cancel")
+                }
+            }
+        )
+    }
+    
+    // Source Selection Dialog
+    if (showSourceDialog) {
+        AlertDialog(
+            onDismissRequest = { showSourceDialog = false },
+            title = {
+                Text(
+                    text = "Select QR Code Source",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            },
+            text = {
+                Column {
+                    // Local option
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp)
+                            .clickable {
+                                qrSource = 0
+                                prefs.edit().putInt("qr_source", 0).apply()
+                                svgContent = null
+                                showSourceDialog = false
+                            },
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (qrSource == 0) MaterialTheme.colorScheme.primaryContainer else Color(0xFFF5F5F5)
+                        )
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(16.dp)
+                        ) {
+                            Text(
+                                text = "Local Generation",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Text(
+                                text = "Generate QR codes on device",
+                                fontSize = 14.sp,
+                                color = Color(0xFF666666)
+                            )
+                        }
+                    }
+                    
+                    // GitHub option
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp)
+                            .clickable {
+                                if (githubToken.isNullOrEmpty()) {
+                                    showTokenDialog = true
+                                    showSourceDialog = false
+                                } else {
+                                    qrSource = 1
+                                    prefs.edit().putInt("qr_source", 1).apply()
+                                    qrBitmap = null // Clear local bitmap
+                                    svgContent = null
+                                    showSourceDialog = false
+                                    fetchCloudQR()
+                                }
+                            },
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (qrSource == 1) MaterialTheme.colorScheme.primaryContainer else Color(0xFFF5F5F5)
+                        )
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(16.dp)
+                        ) {
+                            Text(
+                                text = "GitHub Repository",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Text(
+                                text = "Fetch from private GitHub repo",
+                                fontSize = 14.sp,
+                                color = Color(0xFF666666)
+                            )
+                        }
+                    }
+                    
+                    // Firebase option
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp)
+                            .clickable {
+                                qrSource = 2
+                                prefs.edit().putInt("qr_source", 2).apply()
+                                qrBitmap?.recycle()
+                                qrBitmap = null
+                                svgContent = null
+                                showSourceDialog = false
+                                // Firebase will update automatically, but we can trigger a fetch
+                                // if we want immediate feedback
+                                fetchCloudQR()
+                            },
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (qrSource == 2) MaterialTheme.colorScheme.primaryContainer else Color(0xFFF5F5F5)
+                        )
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(16.dp)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Firebase Real-time",
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Card(
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = Color(0xFF4CAF50)
+                                    ),
+                                    modifier = Modifier.padding(horizontal = 4.dp)
+                                ) {
+                                    Text(
+                                        text = "INSTANT",
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White,
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    )
+                                }
+                            }
+                            Text(
+                                text = "Real-time sync, instant updates",
+                                fontSize = 14.sp,
+                                color = Color(0xFF666666)
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(
+                    onClick = { showSourceDialog = false }
+                ) {
+                    Text("Close")
                 }
             }
         )
