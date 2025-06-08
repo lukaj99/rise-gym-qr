@@ -184,6 +184,44 @@ fun QRPredictorScreen() {
         }
     }
     
+    // Function to fetch GitHub QR
+    val fetchGitHubQR: () -> Unit = {
+        if (useGitHubQR && !isLoading) {
+            isLoading = true
+            errorMessage = null
+            
+            scope.launch {
+                val result = githubService.getLatestQRCodeSVG()
+                
+                result.fold(
+                    onSuccess = { (timestamp, svgContent) ->
+                        val bitmap = SVGUtils.parseSVGToBitmap(svgContent, 800)
+                        if (bitmap != null) {
+                            qrBitmap?.recycle()
+                            qrBitmap = bitmap
+                            qrContent = "GitHub QR: $timestamp"
+                            verificationStatus = "FROM GITHUB"
+                            
+                            // Update time display
+                            val calendar = Calendar.getInstance()
+                            val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
+                            currentTime = timeFormat.format(calendar.time)
+                            timeBlock = "GitHub-sourced"
+                            minutesUntilUpdate = 30 // GitHub updates every 30 min
+                        } else {
+                            errorMessage = "Failed to parse SVG"
+                        }
+                    },
+                    onFailure = { e ->
+                        errorMessage = "Error: ${e.message}"
+                        verificationStatus = "ERROR"
+                    }
+                )
+                isLoading = false
+            }
+        }
+    }
+    
     // Smart adaptive refresh rate optimized for Pixel 9 Pro XL battery life
     LaunchedEffect(useGitHubQR) {
         var lastQRContent = ""
@@ -194,38 +232,9 @@ fun QRPredictorScreen() {
                 val updateStart = System.currentTimeMillis()
                 
                 if (useGitHubQR) {
-                    // Fetch from GitHub
-                    isLoading = true
-                    errorMessage = null
-                    
-                    scope.launch {
-                        val result = githubService.getLatestQRCodeSVG()
-                        
-                        result.fold(
-                            onSuccess = { (timestamp, svgContent) ->
-                                val bitmap = SVGUtils.parseSVGToBitmap(svgContent, 800)
-                                if (bitmap != null) {
-                                    qrBitmap?.recycle()
-                                    qrBitmap = bitmap
-                                    qrContent = "GitHub QR: $timestamp"
-                                    verificationStatus = "FROM GITHUB"
-                                    
-                                    // Update time display
-                                    val calendar = Calendar.getInstance()
-                                    val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
-                                    currentTime = timeFormat.format(calendar.time)
-                                    timeBlock = "GitHub-sourced"
-                                    minutesUntilUpdate = 30 // GitHub updates every 30 min
-                                } else {
-                                    errorMessage = "Failed to parse SVG"
-                                }
-                            },
-                            onFailure = { e ->
-                                errorMessage = "Error: ${e.message}"
-                                verificationStatus = "ERROR"
-                            }
-                        )
-                        isLoading = false
+                    // Initial fetch or periodic update
+                    if (qrBitmap == null && !isLoading) {
+                        fetchGitHubQR()
                     }
                     
                     // GitHub QR codes update every 30 minutes
@@ -382,6 +391,10 @@ fun QRPredictorScreen() {
                                     // Clear current QR to force reload
                                     qrBitmap?.recycle()
                                     qrBitmap = null
+                                    // Fetch immediately if switching to GitHub mode
+                                    if (checked) {
+                                        fetchGitHubQR()
+                                    }
                                 }
                             },
                             colors = SwitchDefaults.colors(
@@ -423,26 +436,62 @@ fun QRPredictorScreen() {
                     .padding(bottom = 16.dp),
                 colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5))
             ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = "Time Block: $timeBlock",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-                    Text(
-                        text = "Next update in $minutesUntilUpdate minutes",
-                        fontSize = 14.sp,
-                        color = Color(0xFF666666)
-                    )
-                    Text(
-                        text = "Status: $verificationStatus",
-                        fontSize = 14.sp,
-                        color = if (verificationStatus == "VERIFIED") Color(0xFF4CAF50) else Color(0xFFFF9800),
-                        fontWeight = FontWeight.Medium
-                    )
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "Time Block: $timeBlock",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Text(
+                            text = "Next update in $minutesUntilUpdate minutes",
+                            fontSize = 14.sp,
+                            color = Color(0xFF666666)
+                        )
+                        Text(
+                            text = "Status: $verificationStatus",
+                            fontSize = 14.sp,
+                            color = when (verificationStatus) {
+                                "FROM GITHUB" -> Color(0xFF2196F3)
+                                "GENERATED", "VERIFIED" -> Color(0xFF4CAF50)
+                                "ERROR" -> Color(0xFFFF5252)
+                                else -> Color(0xFFFF9800)
+                            },
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                    
+                    // Refresh button for GitHub mode
+                    if (useGitHubQR) {
+                        IconButton(
+                            onClick = { fetchGitHubQR() },
+                            enabled = !isLoading,
+                            modifier = Modifier.padding(start = 16.dp)
+                        ) {
+                            if (isLoading) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(24.dp),
+                                    strokeWidth = 2.dp
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Default.Refresh,
+                                    contentDescription = "Refresh QR Code",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(28.dp)
+                                )
+                            }
+                        }
+                    }
                 }
             }
             
@@ -702,6 +751,8 @@ fun QRPredictorScreen() {
                             // Clear current QR to force reload
                             qrBitmap?.recycle()
                             qrBitmap = null
+                            // Fetch immediately
+                            fetchGitHubQR()
                         }
                         
                         showTokenDialog = false
