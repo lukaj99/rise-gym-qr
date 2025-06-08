@@ -21,6 +21,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.ui.window.Dialog
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -157,18 +158,24 @@ fun QRPredictorScreen() {
     var useGitHubQR by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    var showTokenDialog by remember { mutableStateOf(false) }
+    var githubToken by remember { mutableStateOf<String?>(null) }
     
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val clipboardManager = LocalClipboardManager.current
     val hapticFeedback = LocalHapticFeedback.current
-    val githubService = remember { GitHubQRService() }
     
-    // Load saved preference
+    // Load saved preferences
     val prefs = context.getSharedPreferences("qr_prefs", Context.MODE_PRIVATE)
+    val securePrefs = context.getSharedPreferences("secure_prefs", Context.MODE_PRIVATE)
+    
     LaunchedEffect(Unit) {
         useGitHubQR = prefs.getBoolean("use_github_qr", false)
+        githubToken = securePrefs.getString("github_token", null)
     }
+    
+    val githubService = remember(githubToken) { GitHubQRService(githubToken) }
     
     // Proper bitmap cleanup to prevent memory leaks
     DisposableEffect(Unit) {
@@ -361,21 +368,41 @@ fun QRPredictorScreen() {
                             color = Color(0xFF666666)
                         )
                     }
-                    Switch(
-                        checked = useGitHubQR,
-                        onCheckedChange = { checked ->
-                            useGitHubQR = checked
-                            // Save preference
-                            prefs.edit().putBoolean("use_github_qr", checked).apply()
-                            // Clear current QR to force reload
-                            qrBitmap?.recycle()
-                            qrBitmap = null
-                        },
-                        colors = SwitchDefaults.colors(
-                            checkedThumbColor = MaterialTheme.colorScheme.primary,
-                            checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Switch(
+                            checked = useGitHubQR,
+                            onCheckedChange = { checked ->
+                                if (checked && githubToken.isNullOrEmpty()) {
+                                    // Show token dialog if no token is set
+                                    showTokenDialog = true
+                                } else {
+                                    useGitHubQR = checked
+                                    // Save preference
+                                    prefs.edit().putBoolean("use_github_qr", checked).apply()
+                                    // Clear current QR to force reload
+                                    qrBitmap?.recycle()
+                                    qrBitmap = null
+                                }
+                            },
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = MaterialTheme.colorScheme.primary,
+                                checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
+                            )
                         )
-                    )
+                        if (useGitHubQR) {
+                            IconButton(
+                                onClick = { showTokenDialog = true },
+                                modifier = Modifier.size(24.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Settings,
+                                    contentDescription = "Configure GitHub Token",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
+                    }
                 }
             }
             
@@ -609,6 +636,88 @@ fun QRPredictorScreen() {
                 }
             }
         }
+    }
+    
+    // GitHub Token Dialog
+    if (showTokenDialog) {
+        var tokenInput by remember { mutableStateOf(githubToken ?: "") }
+        var showPassword by remember { mutableStateOf(false) }
+        
+        AlertDialog(
+            onDismissRequest = { showTokenDialog = false },
+            title = {
+                Text(
+                    text = "GitHub Personal Access Token",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            },
+            text = {
+                Column {
+                    Text(
+                        text = "Enter your GitHub Personal Access Token to access the private repository.",
+                        fontSize = 14.sp,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                    
+                    OutlinedTextField(
+                        value = tokenInput,
+                        onValueChange = { tokenInput = it },
+                        label = { Text("Personal Access Token") },
+                        placeholder = { Text("ghp_xxxxxxxxxxxx") },
+                        visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
+                        trailingIcon = {
+                            IconButton(onClick = { showPassword = !showPassword }) {
+                                Icon(
+                                    imageVector = if (showPassword) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                                    contentDescription = if (showPassword) "Hide token" else "Show token"
+                                )
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                    
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    Text(
+                        text = "To create a token:\n1. Go to GitHub Settings > Developer settings > Personal access tokens\n2. Generate new token (classic)\n3. Select 'repo' scope\n4. Copy the token here",
+                        fontSize = 12.sp,
+                        color = Color(0xFF666666),
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        // Save token
+                        githubToken = tokenInput
+                        securePrefs.edit().putString("github_token", tokenInput).apply()
+                        
+                        // Enable GitHub mode if token is provided
+                        if (tokenInput.isNotEmpty()) {
+                            useGitHubQR = true
+                            prefs.edit().putBoolean("use_github_qr", true).apply()
+                            // Clear current QR to force reload
+                            qrBitmap?.recycle()
+                            qrBitmap = null
+                        }
+                        
+                        showTokenDialog = false
+                    }
+                ) {
+                    Text("Save")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showTokenDialog = false }
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 }
 

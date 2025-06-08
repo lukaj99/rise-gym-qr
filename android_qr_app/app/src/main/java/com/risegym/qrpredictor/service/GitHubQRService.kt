@@ -5,15 +5,16 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import org.json.JSONArray
 import org.json.JSONObject
 import java.util.concurrent.TimeUnit
 
-class GitHubQRService {
+class GitHubQRService(private val githubToken: String? = null) {
     companion object {
         private const val TAG = "GitHubQRService"
         private const val REPO_NAME = "lukaj99/rise-gym-qr"
         private const val QR_DIRECTORY = "real_qr_codes"
-        private const val MANIFEST_URL = "https://raw.githubusercontent.com/$REPO_NAME/master/$QR_DIRECTORY/manifest.json"
+        private const val API_BASE = "https://api.github.com"
     }
 
     private val client = OkHttpClient.Builder()
@@ -29,36 +30,56 @@ class GitHubQRService {
 
     suspend fun fetchLatestQRCode(): Result<QRCodeFile> = withContext(Dispatchers.IO) {
         try {
-            // Fetch the manifest file that lists all available QR codes
-            val manifestRequest = Request.Builder()
-                .url(MANIFEST_URL)
-                .build()
-
-            val manifestResponse = client.newCall(manifestRequest).execute()
-            if (!manifestResponse.isSuccessful) {
-                Log.e(TAG, "Failed to fetch manifest: ${manifestResponse.code}")
-                // If it's a 404, it might be because the repo is private
-                if (manifestResponse.code == 404) {
-                    return@withContext Result.failure(Exception("Cannot access private repository. Please make the repository public or use local generation."))
-                }
-                return@withContext Result.failure(Exception("Failed to fetch manifest: ${manifestResponse.code}"))
-            }
-
-            val manifestJson = manifestResponse.body?.string() ?: return@withContext Result.failure(Exception("Empty manifest"))
-            val manifest = JSONObject(manifestJson)
+            // Use GitHub API to list files in the directory
+            val apiUrl = "$API_BASE/repos/$REPO_NAME/contents/$QR_DIRECTORY"
+            val requestBuilder = Request.Builder()
+                .url(apiUrl)
+                .addHeader("Accept", "application/vnd.github.v3+json")
             
-            val qrCodesArray = manifest.getJSONArray("qr_codes")
-            if (qrCodesArray.length() == 0) {
-                return@withContext Result.failure(Exception("No QR codes found in manifest"))
+            // Add authentication if token is provided
+            githubToken?.let {
+                requestBuilder.addHeader("Authorization", "Bearer $it")
+            }
+            
+            val request = requestBuilder.build()
+            val response = client.newCall(request).execute()
+            
+            if (!response.isSuccessful) {
+                Log.e(TAG, "Failed to fetch files: ${response.code}")
+                if (response.code == 401) {
+                    return@withContext Result.failure(Exception("Invalid GitHub token. Please check your personal access token."))
+                } else if (response.code == 404) {
+                    return@withContext Result.failure(Exception("Repository not found or no access. Please check your token has repo scope."))
+                }
+                return@withContext Result.failure(Exception("Failed to fetch files: ${response.code}"))
             }
 
-            // Get the first (latest) QR code
-            val latestQR = qrCodesArray.getJSONObject(0)
-            val fileName = latestQR.getString("filename")
-            val timestamp = latestQR.getString("timestamp")
-            val url = latestQR.getString("url")
-
-            Result.success(QRCodeFile(fileName, url, timestamp))
+            val filesJson = response.body?.string() ?: return@withContext Result.failure(Exception("Empty response"))
+            val filesArray = JSONArray(filesJson)
+            
+            // Filter for SVG files and sort by name (timestamp)
+            val svgFiles = mutableListOf<JSONObject>()
+            for (i in 0 until filesArray.length()) {
+                val file = filesArray.getJSONObject(i)
+                val fileName = file.getString("name")
+                if (fileName.endsWith(".svg")) {
+                    svgFiles.add(file)
+                }
+            }
+            
+            if (svgFiles.isEmpty()) {
+                return@withContext Result.failure(Exception("No QR codes found"))
+            }
+            
+            // Sort by filename descending to get the latest
+            svgFiles.sortByDescending { it.getString("name") }
+            val latestFile = svgFiles.first()
+            
+            val fileName = latestFile.getString("name")
+            val downloadUrl = latestFile.getString("download_url")
+            val timestamp = fileName.removeSuffix(".svg")
+            
+            Result.success(QRCodeFile(fileName, downloadUrl, timestamp))
         } catch (e: Exception) {
             Log.e(TAG, "Error fetching latest QR code", e)
             Result.failure(e)
@@ -67,11 +88,17 @@ class GitHubQRService {
 
     suspend fun downloadSVGContent(downloadUrl: String): Result<String> = withContext(Dispatchers.IO) {
         try {
-            val request = Request.Builder()
+            val requestBuilder = Request.Builder()
                 .url(downloadUrl)
-                .build()
-
+            
+            // Add authentication for private repo raw content
+            githubToken?.let {
+                requestBuilder.addHeader("Authorization", "Bearer $it")
+            }
+            
+            val request = requestBuilder.build()
             val response = client.newCall(request).execute()
+            
             if (!response.isSuccessful) {
                 return@withContext Result.failure(Exception("Failed to download SVG: ${response.code}"))
             }
@@ -104,6 +131,26 @@ class GitHubQRService {
             Result.success(Pair(qrCodeFile.timestamp, svgContent))
         } catch (e: Exception) {
             Log.e(TAG, "Error getting latest QR code SVG", e)
+            Result.failure(e)
+        }
+    }
+
+    suspend fun testConnection(): Result<Boolean> = withContext(Dispatchers.IO) {
+        try {
+            val apiUrl = "$API_BASE/repos/$REPO_NAME"
+            val requestBuilder = Request.Builder()
+                .url(apiUrl)
+                .addHeader("Accept", "application/vnd.github.v3+json")
+            
+            githubToken?.let {
+                requestBuilder.addHeader("Authorization", "Bearer $it")
+            }
+            
+            val request = requestBuilder.build()
+            val response = client.newCall(request).execute()
+            
+            Result.success(response.isSuccessful)
+        } catch (e: Exception) {
             Result.failure(e)
         }
     }
