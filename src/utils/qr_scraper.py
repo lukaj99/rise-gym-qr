@@ -138,6 +138,14 @@ class RiseGymQRScraperFinal:
                     pass_filled = page.evaluate('document.querySelector("input[type=\'password\']")?.value?.length > 0')
                     print(f"📧 Email field value: {email_val}")
                     print(f"🔑 Password field filled: {pass_filled}")
+                    
+                    # Check credential characteristics (without exposing them)
+                    print(f"📏 Email length: {len(self.username)} chars")
+                    print(f"📏 Password length: {len(self.password)} chars")
+                    print(f"📧 Email has @: {'@' in self.username}")
+                    print(f"📧 Email lowercase: {self.username.lower() == self.username}")
+                    print(f"🔑 Password has spaces: {' ' in self.password}")
+                    print(f"🔑 Password has special chars: {any(c in self.password for c in '!@#$%^&*()_+-=[]{}|;:,.<>?')}")
                 
                 print("🚪 Submitting login form...")
                 
@@ -167,6 +175,16 @@ class RiseGymQRScraperFinal:
                             page.click(selector)
                             submit_success = True
                             print(f"✅ Clicked login button: {selector}")
+                            
+                            # Wait a moment for any client-side validation
+                            page.wait_for_timeout(2000)
+                            
+                            # Check if still on login page with error
+                            if "login" in page.url.lower():
+                                error_elem = page.query_selector('.uk-alert-danger, .error-message, [class*="error"]')
+                                if error_elem:
+                                    error_text = error_elem.text_content()
+                                    print(f"⚠️  Login error after click: {error_text}")
                             break
                     except:
                         continue
