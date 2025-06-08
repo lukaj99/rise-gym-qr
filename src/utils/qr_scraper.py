@@ -8,6 +8,7 @@ import os
 import subprocess
 from datetime import datetime
 from dotenv import load_dotenv
+import pytz
 
 try:
     from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeout
@@ -344,7 +345,9 @@ class RiseGymQRScraperFinal:
                     
                     if qr_svg:
                         # Save QR code
-                        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+                        # Use BST (British Summer Time) for timestamp
+                        bst = pytz.timezone('Europe/London')
+                        timestamp = datetime.now(bst).strftime("%Y%m%d%H%M%S")
                         filename = f"real_qr_codes/{timestamp}.svg"
                         
                         with open(filename, 'w') as f:

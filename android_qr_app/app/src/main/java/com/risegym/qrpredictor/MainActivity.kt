@@ -56,10 +56,14 @@ import com.risegym.qrpredictor.scraping.HybridQRFetcher
 import com.risegym.qrpredictor.scraping.WebScraperInterface
 import com.risegym.qrpredictor.security.SecureCredentialManager
 import com.risegym.qrpredictor.service.QRUpdateWorker
+import com.risegym.qrpredictor.service.GitHubQRService
+import com.risegym.qrpredictor.utils.SVGUtils
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
+import android.content.SharedPreferences
+import android.content.Context
 
 class MainActivity : ComponentActivity() {
     private var originalBrightness: Float = -1f
@@ -150,11 +154,21 @@ fun QRPredictorScreen() {
     var qrContent by remember { mutableStateOf("") }
     var verificationStatus by remember { mutableStateOf("") }
     var showCopyMessage by remember { mutableStateOf(false) }
+    var useGitHubQR by remember { mutableStateOf(false) }
+    var isLoading by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
     
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val clipboardManager = LocalClipboardManager.current
     val hapticFeedback = LocalHapticFeedback.current
+    val githubService = remember { GitHubQRService() }
+    
+    // Load saved preference
+    val prefs = context.getSharedPreferences("qr_prefs", Context.MODE_PRIVATE)
+    LaunchedEffect(Unit) {
+        useGitHubQR = prefs.getBoolean("use_github_qr", false)
+    }
     
     // Proper bitmap cleanup to prevent memory leaks
     DisposableEffect(Unit) {
@@ -164,7 +178,7 @@ fun QRPredictorScreen() {
     }
     
     // Smart adaptive refresh rate optimized for Pixel 9 Pro XL battery life
-    LaunchedEffect(Unit) {
+    LaunchedEffect(useGitHubQR) {
         var lastQRContent = ""
         var lastInteractionTime = System.currentTimeMillis()
         
@@ -172,93 +186,106 @@ fun QRPredictorScreen() {
             while (isActive) {
                 val updateStart = System.currentTimeMillis()
                 
-                // Parallel execution on Tensor G4's multiple cores
-                val timeCalculations = async(Dispatchers.Default) {
-                    val calendar = Calendar.getInstance()
-                    val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
-                    Triple(
-                        timeFormat.format(calendar.time),
-                        QRPatternGenerator.getCurrentTimeBlockString(),
-                        QRPatternGenerator.getMinutesUntilNextUpdate()
-                    )
-                }
-                
-                val qrContentCalculation = async(Dispatchers.Default) {
-                    QRPatternGenerator.getCurrentQRContent()
-                }
-                
-                // Await both calculations in parallel
-                val (timeString, timeBlockString, minutesUpdate) = timeCalculations.await()
-                val newQrContent = qrContentCalculation.await()
-                
-                val contentChanged = newQrContent != lastQRContent
-                val isInteracting = (System.currentTimeMillis() - lastInteractionTime) < 5000 // 5sec interaction window
-                
-                // Update UI on main thread
-                withContext(Dispatchers.Main) {
-                    currentTime = timeString
-                    timeBlock = timeBlockString
-                    minutesUntilUpdate = minutesUpdate
-                    qrContent = newQrContent
-                    verificationStatus = "VERIFIED"
-                }
-                
-                // Generate QR code on background thread if content changed
-                if (contentChanged || qrBitmap == null) {
-                    val startTime = System.currentTimeMillis()
-                    val optimalSize = PixelOptimizer.getOptimalQRSize(context)
+                if (useGitHubQR) {
+                    // Fetch from GitHub
+                    isLoading = true
+                    errorMessage = null
                     
-                    val newBitmap = async(PixelOptimizer.qrGenerationDispatcher) {
-                        QRCodeGenerator.generateCurrentQRCode(optimalSize)
+                    scope.launch {
+                        val result = githubService.getLatestQRCodeSVG()
+                        
+                        result.fold(
+                            onSuccess = { (timestamp, svgContent) ->
+                                val bitmap = SVGUtils.parseSVGToBitmap(svgContent, 800)
+                                if (bitmap != null) {
+                                    qrBitmap?.recycle()
+                                    qrBitmap = bitmap
+                                    qrContent = "GitHub QR: $timestamp"
+                                    verificationStatus = "FROM GITHUB"
+                                    
+                                    // Update time display
+                                    val calendar = Calendar.getInstance()
+                                    val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
+                                    currentTime = timeFormat.format(calendar.time)
+                                    timeBlock = "GitHub-sourced"
+                                    minutesUntilUpdate = 30 // GitHub updates every 30 min
+                                } else {
+                                    errorMessage = "Failed to parse SVG"
+                                }
+                            },
+                            onFailure = { e ->
+                                errorMessage = "Error: ${e.message}"
+                                verificationStatus = "ERROR"
+                            }
+                        )
+                        isLoading = false
                     }
                     
+                    // GitHub QR codes update every 30 minutes
+                    delay(30000) // Check every 30 seconds
+                    
+                } else {
+                    // Local generation (existing code)
+                    val timeCalculations = async(Dispatchers.Default) {
+                        val calendar = Calendar.getInstance()
+                        val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
+                        Triple(
+                            timeFormat.format(calendar.time),
+                            QRPatternGenerator.getCurrentTimeBlockString(),
+                            QRPatternGenerator.getMinutesUntilNextUpdate()
+                        )
+                    }
+                    
+                    val qrContentCalculation = async(Dispatchers.Default) {
+                        QRPatternGenerator.getCurrentQRContent()
+                    }
+                    
+                    // Await both calculations in parallel
+                    val (timeString, timeBlockString, minutesUpdate) = timeCalculations.await()
+                    val newQrContent = qrContentCalculation.await()
+                    
+                    val contentChanged = newQrContent != lastQRContent
+                    val isInteracting = (System.currentTimeMillis() - lastInteractionTime) < 5000 // 5sec interaction window
+                    
+                    // Update UI on main thread
                     withContext(Dispatchers.Main) {
-                        // Recycle old bitmap to prevent memory leaks
-                        qrBitmap?.recycle()
-                        qrBitmap = newBitmap.await()
-                        lastQRContent = newQrContent
+                        currentTime = timeString
+                        timeBlock = timeBlockString
+                        minutesUntilUpdate = minutesUpdate
+                        qrContent = newQrContent
+                        verificationStatus = "GENERATED"
+                        errorMessage = null
+                    }
+                    
+                    // Generate QR code on background thread if content changed
+                    if (contentChanged || qrBitmap == null) {
+                        val startTime = System.currentTimeMillis()
+                        val optimalSize = PixelOptimizer.getOptimalQRSize(context)
                         
-                        // Performance monitoring for Pixel 9 Pro XL
-                        if (PixelOptimizer.isPixel9ProXL()) {
-                            val generationTime = System.currentTimeMillis() - startTime
-                            val runtime = Runtime.getRuntime()
-                            val memoryUsage = (runtime.totalMemory() - runtime.freeMemory()) / (1024 * 1024)
-                            val batteryLevel = PixelOptimizer.getBatteryLevel(context)
-                            val isCharging = PixelOptimizer.isCharging(context)
-                            
-                            PixelOptimizer.recordPerformanceMetrics(
-                                PixelOptimizer.PerformanceMetrics(
-                                    qrGenerationTimeMs = generationTime,
-                                    bitmapAllocationMs = 0L, 
-                                    pixelProcessingMs = 0L,  
-                                    cacheHitRate = 0.0,      
-                                    memoryUsageMB = memoryUsage.toDouble()
-                                )
-                            )
-                            
-                            // Log battery-aware performance info
-                            println("🔋 Battery: ${batteryLevel}% ${if (isCharging) "(Charging)" else ""}")
-                            println("⚡ Refresh Mode: ${when {
-                                isCharging -> "AGGRESSIVE"
-                                batteryLevel < 20 -> "BATTERY_SAVER" 
-                                batteryLevel < 50 -> "BALANCED"
-                                else -> "PERFORMANCE"
-                            }}")
+                        val newBitmap = async(PixelOptimizer.qrGenerationDispatcher) {
+                            QRCodeGenerator.generateCurrentQRCode(optimalSize)
+                        }
+                        
+                        withContext(Dispatchers.Main) {
+                            // Recycle old bitmap to prevent memory leaks
+                            qrBitmap?.recycle()
+                            qrBitmap = newBitmap.await()
+                            lastQRContent = newQrContent
                         }
                     }
+                    
+                    // Smart adaptive refresh rate based on battery and usage
+                    val refreshInterval = PixelOptimizer.getAdaptiveRefreshInterval(
+                        context, contentChanged, isInteracting
+                    )
+                    
+                    // Update interaction tracking for tap events
+                    if (showCopyMessage) {
+                        lastInteractionTime = System.currentTimeMillis()
+                    }
+                    
+                    delay(refreshInterval)
                 }
-                
-                // Smart adaptive refresh rate based on battery and usage
-                val refreshInterval = PixelOptimizer.getAdaptiveRefreshInterval(
-                    context, contentChanged, isInteracting
-                )
-                
-                // Update interaction tracking for tap events
-                if (showCopyMessage) {
-                    lastInteractionTime = System.currentTimeMillis()
-                }
-                
-                delay(refreshInterval)
             }
         } catch (e: Exception) {
             // Handle cancellation gracefully
@@ -304,6 +331,50 @@ fun QRPredictorScreen() {
                         fontWeight = FontWeight.Medium,
                         letterSpacing = 0.5.sp,
                         color = MaterialTheme.colorScheme.secondary
+                    )
+                }
+            }
+            
+            // Toggle switch for QR source
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5))
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column {
+                        Text(
+                            text = if (useGitHubQR) "GitHub QR Codes" else "Generated QR Codes",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Text(
+                            text = if (useGitHubQR) "Using latest from repository" else "Generating locally",
+                            fontSize = 12.sp,
+                            color = Color(0xFF666666)
+                        )
+                    }
+                    Switch(
+                        checked = useGitHubQR,
+                        onCheckedChange = { checked ->
+                            useGitHubQR = checked
+                            // Save preference
+                            prefs.edit().putBoolean("use_github_qr", checked).apply()
+                            // Clear current QR to force reload
+                            qrBitmap?.recycle()
+                            qrBitmap = null
+                        },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = MaterialTheme.colorScheme.primary,
+                            checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
+                        )
                     )
                 }
             }
@@ -376,16 +447,54 @@ fun QRPredictorScreen() {
                         .padding(16.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    qrBitmap?.let { bitmap ->
-                        Image(
-                            bitmap = bitmap.asImageBitmap(),
-                            contentDescription = "Generated QR Code - Tap to copy",
-                            modifier = Modifier.fillMaxSize()
-                        )
-                    } ?: run {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(40.dp)
-                        )
+                    when {
+                        errorMessage != null -> {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Warning,
+                                    contentDescription = "Error",
+                                    tint = Color(0xFFFF6B6B),
+                                    modifier = Modifier.size(48.dp)
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = errorMessage ?: "Unknown error",
+                                    color = Color(0xFFFF6B6B),
+                                    fontSize = 14.sp,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.padding(horizontal = 16.dp)
+                                )
+                            }
+                        }
+                        isLoading && useGitHubQR -> {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(40.dp)
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = "Fetching from GitHub...",
+                                    fontSize = 14.sp,
+                                    color = Color(0xFF666666)
+                                )
+                            }
+                        }
+                        qrBitmap != null -> {
+                            Image(
+                                bitmap = qrBitmap!!.asImageBitmap(),
+                                contentDescription = "QR Code - Tap to copy",
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
+                        else -> {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(40.dp)
+                            )
+                        }
                     }
                     
                     // Copy message overlay
