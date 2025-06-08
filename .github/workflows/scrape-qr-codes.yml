@@ -4,6 +4,8 @@ on:
   schedule:
     # Run every 30 minutes
     - cron: '*/30 * * * *'
+    # Run every 2 hours at 1 minute past the hour (00:01, 02:01, 04:01, etc.)
+    - cron: '1 */2 * * *'
   workflow_dispatch:  # Allow manual trigger
 
 jobs:
