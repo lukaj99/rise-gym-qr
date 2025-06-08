@@ -201,10 +201,8 @@ fun QRPredictorScreen() {
     // Firebase real-time listener
     LaunchedEffect(qrSource) {
         if (qrSource == 2) {
-            Log.d("FirebaseQR", "LaunchedEffect for qrSource=2, starting to collect.")
             // Collect Firebase real-time updates
             firebaseService.observeLatestQRCode().collect { result ->
-                Log.d("FirebaseQR", "Collected new result from Firebase flow.")
                 result.fold(
                     onSuccess = { qrData ->
                         Log.d("FirebaseQR", "Received real-time update. SVG content length: ${qrData.svgContent.length}")
@@ -247,8 +245,7 @@ fun QRPredictorScreen() {
                 val result = when (qrSource) {
                     1 -> githubService.getLatestQRCodeSVG()
                     2 -> {
-                        val firebaseResult = firebaseService.getLatestQRCode()
-                        firebaseResult.map { qrData ->
+                        firebaseService.getLatestQRCode().map { qrData ->
                             Pair(qrData.timestamp, qrData.svgContent)
                         }
                     }
@@ -299,6 +296,14 @@ fun QRPredictorScreen() {
     
     // Smart adaptive refresh rate optimized for Pixel 9 Pro XL battery life
     LaunchedEffect(qrSource) {
+        if (qrSource != 0) {
+            // For cloud sources, we trigger a fetch here, in a scope
+            // that is tied to the lifecycle of the source selection.
+            scope.launch {
+                fetchCloudQR()
+            }
+        }
+
         var lastQRContent = ""
         var lastInteractionTime = System.currentTimeMillis()
         
@@ -307,13 +312,9 @@ fun QRPredictorScreen() {
                 val updateStart = System.currentTimeMillis()
                 
                 if (qrSource != 0) {
-                    // Initial fetch or periodic update for cloud sources
-                    if (svgContent == null && !isLoading) {
-                        fetchCloudQR()
-                    }
-                    
-                    // Cloud QR codes update every 30 minutes
-                    delay(30000) // Check every 30 seconds
+                    // Cloud source is now handled in the initial effect launch
+                    // We can add periodic refresh logic here if needed in the future
+                    delay(30000) // Keep the loop alive
                     
                 } else {
                     // Local generation (existing code)

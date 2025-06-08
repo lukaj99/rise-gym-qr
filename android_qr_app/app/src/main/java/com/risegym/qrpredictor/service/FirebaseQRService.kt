@@ -32,7 +32,6 @@ class FirebaseQRService {
     fun observeLatestQRCode(): Flow<Result<QRCodeData>> = callbackFlow {
         val listener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
-                Log.d(TAG, "onDataChange triggered. Snapshot exists: ${snapshot.exists()}")
                 try {
                     val qrCodeData = snapshot.getValue(QRCodeData::class.java)
                     if (qrCodeData != null) {
@@ -47,12 +46,11 @@ class FirebaseQRService {
             }
             
             override fun onCancelled(error: DatabaseError) {
-                Log.e(TAG, "onCancelled triggered. Firebase database error: ${error.message}", error.toException())
+                Log.e(TAG, "Firebase database error: ${error.message}")
                 trySend(Result.failure(Exception(error.message)))
             }
         }
         
-        Log.d(TAG, "Attaching ValueEventListener to 'latest' ref.")
         latestRef.addValueEventListener(listener)
         
         awaitClose {
