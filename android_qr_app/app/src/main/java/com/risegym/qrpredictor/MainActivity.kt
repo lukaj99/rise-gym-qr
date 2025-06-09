@@ -118,6 +118,7 @@ fun QRPredictorScreen() {
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var lastUpdateTime by remember { mutableStateOf<Long>(0) }
+    var currentTimeSlot by remember { mutableStateOf("") }
     
     val scope = rememberCoroutineScope()
     val firebaseService = remember { FirebaseQRService() }
@@ -173,13 +174,26 @@ fun QRPredictorScreen() {
     
     // Update current time and calculate minutes until next update
     LaunchedEffect(Unit) {
+        var previousTimeSlot = ""
         while (isActive) {
             val calendar = Calendar.getInstance()
             val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
             currentTime = timeFormat.format(calendar.time)
             
-            // Calculate minutes until next 2-hour block
+            // Calculate current time slot
             val currentHour = calendar.get(Calendar.HOUR_OF_DAY)
+            val slotStartHour = (currentHour / 2) * 2
+            val slotEndHour = slotStartHour + 2 - 1
+            currentTimeSlot = String.format("%d:00-%d:59", slotStartHour, slotEndHour)
+            
+            // Check if time slot has changed
+            if (previousTimeSlot.isNotEmpty() && previousTimeSlot != currentTimeSlot) {
+                Log.d("MainActivity", "Time slot changed from $previousTimeSlot to $currentTimeSlot, refreshing QR")
+                scope.launch { fetchQRCode() }
+            }
+            previousTimeSlot = currentTimeSlot
+            
+            // Calculate minutes until next 2-hour block
             val currentMinute = calendar.get(Calendar.MINUTE)
             val hoursUntilNext = if (currentHour % 2 == 0) 2 else 1
             minutesUntilUpdate = (hoursUntilNext * 60) - currentMinute
@@ -359,14 +373,24 @@ fun QRPredictorScreen() {
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "Time Slot: $timeSlot",
+                        text = "Current Time Slot: $currentTimeSlot",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Medium
                     )
+                    if (timeSlot.isNotEmpty() && timeSlot != currentTimeSlot) {
+                        Text(
+                            text = "QR Code: $timeSlot",
+                            fontSize = 14.sp,
+                            color = Color(0xFFFF6B6B),
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                    }
                     Text(
                         text = "Next update in $minutesUntilUpdate minutes",
                         fontSize = 14.sp,
-                        color = Color(0xFF666666)
+                        color = Color(0xFF666666),
+                        modifier = Modifier.padding(top = 4.dp)
                     )
                 }
             }

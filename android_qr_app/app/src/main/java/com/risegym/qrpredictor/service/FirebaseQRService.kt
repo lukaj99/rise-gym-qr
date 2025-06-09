@@ -157,15 +157,13 @@ class FirebaseQRService {
         val listener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 try {
-                    // Calculate current time slot
+                    // Calculate current time slot using device local time
                     val calendar = java.util.Calendar.getInstance()
-                    calendar.timeZone = java.util.TimeZone.getTimeZone("America/New_York")
                     val currentHour = calendar.get(java.util.Calendar.HOUR_OF_DAY)
                     val currentTimeSlotHour = (currentHour / 2) * 2
                     
-                    // Format timestamp for current time slot
+                    // Format timestamp for current time slot using local timezone
                     val dateFormat = java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.getDefault())
-                    dateFormat.timeZone = java.util.TimeZone.getTimeZone("America/New_York")
                     val dateStr = dateFormat.format(calendar.time)
                     val targetTimestamp = String.format("%s%02d0000", dateStr, currentTimeSlotHour)
                     
@@ -356,7 +354,7 @@ class FirebaseQRService {
             // Expected format: YYYYMMDDHHMMSS (e.g., 20250609072217)
             if (timestamp.length == 14) {
                 val dateFormat = java.text.SimpleDateFormat("yyyyMMddHHmmss", java.util.Locale.getDefault())
-                dateFormat.timeZone = java.util.TimeZone.getTimeZone("America/New_York")
+                // Use default timezone (device local time)
                 dateFormat.parse(timestamp)?.time ?: System.currentTimeMillis()
             } else {
                 System.currentTimeMillis()
@@ -373,15 +371,13 @@ class FirebaseQRService {
     suspend fun getMostRecentQRCode(): Result<QRCodeData> = suspendCancellableCoroutine { continuation ->
         Log.d(TAG, "Fetching most recent QR code")
         
-        // Calculate current time slot
+        // Calculate current time slot using device local time
         val calendar = java.util.Calendar.getInstance()
-        calendar.timeZone = java.util.TimeZone.getTimeZone("America/New_York")
         val currentHour = calendar.get(java.util.Calendar.HOUR_OF_DAY)
         val currentTimeSlotHour = (currentHour / 2) * 2
         
-        // Format timestamp for current time slot
+        // Format timestamp for current time slot using local timezone
         val dateFormat = java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.getDefault())
-        dateFormat.timeZone = java.util.TimeZone.getTimeZone("America/New_York")
         val dateStr = dateFormat.format(calendar.time)
         val targetTimestamp = String.format("%s%02d0000", dateStr, currentTimeSlotHour)
         
