@@ -3,6 +3,8 @@ package com.risegym.qrpredictor.utils
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.Paint
+import android.graphics.Rect
 import android.util.Log
 import com.caverock.androidsvg.SVG
 
@@ -25,31 +27,36 @@ object SVGUtils {
             
             val svg = SVG.getFromString(svgContent)
             
-            // Create bitmap with white background
+            // First render the SVG at its native size
+            val svgSize = 580
+            val tempBitmap = Bitmap.createBitmap(svgSize, svgSize, Bitmap.Config.ARGB_8888)
+            val tempCanvas = Canvas(tempBitmap)
+            tempCanvas.drawColor(Color.WHITE)
+            svg.renderToCanvas(tempCanvas)
+            
+            // Now create the final bitmap and draw the QR portion scaled
             val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
             val canvas = Canvas(bitmap)
             canvas.drawColor(Color.WHITE)
             
-            // Get SVG dimensions
-            val docWidth = svg.documentWidth
-            val docHeight = svg.documentHeight
+            // The QR code is from 80,80 to 500,500 in the 580x580 SVG
+            val srcRect = Rect(80, 80, 500, 500)  // QR code bounds in source
             
-            // Calculate scale to fit the bitmap while maintaining aspect ratio
-            val scale = minOf(size.toFloat() / docWidth, size.toFloat() / docHeight)
+            // Add 5% padding on each side
+            val padding = (size * 0.05f).toInt()
+            val dstRect = Rect(padding, padding, size - padding, size - padding)
             
-            // Center the SVG in the bitmap
-            canvas.save()
-            canvas.translate(
-                (size - docWidth * scale) / 2f,
-                (size - docHeight * scale) / 2f
-            )
-            canvas.scale(scale, scale)
+            val paint = Paint().apply {
+                isFilterBitmap = true
+                isAntiAlias = true
+            }
             
-            // Render SVG to bitmap
-            svg.renderToCanvas(canvas)
-            canvas.restore()
+            canvas.drawBitmap(tempBitmap, srcRect, dstRect, paint)
             
-            Log.d(TAG, "Successfully parsed SVG (${docWidth}x${docHeight}) to ${size}x${size} bitmap")
+            // Clean up temp bitmap
+            tempBitmap.recycle()
+            
+            Log.d(TAG, "Successfully parsed SVG to ${size}x${size} bitmap via intermediate")
             bitmap
         } catch (e: Exception) {
             Log.e(TAG, "Failed to parse SVG: ${e.message}", e)

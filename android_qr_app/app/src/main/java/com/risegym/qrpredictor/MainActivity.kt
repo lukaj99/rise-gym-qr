@@ -120,13 +120,13 @@ fun QRPredictorScreen() {
     val scope = rememberCoroutineScope()
     val firebaseService = remember { FirebaseQRService() }
     
-    // Function to fetch QR from Firebase
+    // Function to manually refresh QR from Firebase
     val fetchQRCode: suspend () -> Unit = {
         isLoading = true
         errorMessage = null
         
         try {
-            val result = firebaseService.getLatestQRCode()
+            val result = firebaseService.getCurrentTimeSlotQRCode()
             
             result.fold(
                 onSuccess = { qrData ->
@@ -172,24 +172,29 @@ fun QRPredictorScreen() {
         }
     }
     
-    // Fetch QR code on startup and refresh periodically
+    // Listen for real-time updates from Firebase
     LaunchedEffect(Unit) {
-        // Initial fetch
-        fetchQRCode()
-        
-        // Refresh every 30 seconds to check for updates
-        while (isActive) {
-            delay(30000) // 30 seconds
-            
-            // Check if we need to fetch a new QR code
-            val calendar = Calendar.getInstance()
-            val currentMinute = calendar.get(Calendar.MINUTE)
-            val currentSecond = calendar.get(Calendar.SECOND)
-            
-            // Fetch new QR at the start of each 2-hour block
-            if (currentMinute == 0 && currentSecond < 30) {
-                fetchQRCode()
-            }
+        firebaseService.observeLatestQRCode().collect { result ->
+            result.fold(
+                onSuccess = { qrData ->
+                    Log.d("MainActivity", "Received real-time QR update from Firebase")
+                    
+                    val bitmap = SVGUtils.parseSVGToBitmap(qrData.svgContent, 800)
+                    if (bitmap != null) {
+                        qrBitmap?.recycle()
+                        qrBitmap = bitmap
+                        timeSlot = qrData.timeSlot
+                        lastUpdateTime = qrData.timestamp
+                        errorMessage = null
+                    } else {
+                        errorMessage = "Failed to parse QR code"
+                    }
+                },
+                onFailure = { e ->
+                    Log.e("MainActivity", "Real-time update error", e)
+                    errorMessage = "Error: ${e.message}"
+                }
+            )
         }
     }
     
@@ -206,6 +211,7 @@ fun QRPredictorScreen() {
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .systemBarsPadding() // Add padding for status bar and navigation bar
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -345,8 +351,7 @@ fun QRPredictorScreen() {
             ) {
                 Box(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp),
+                        .fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
                     when {
