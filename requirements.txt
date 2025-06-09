@@ -8,7 +8,7 @@ python-dotenv==1.0.0
 Pillow==10.3.0
 
 # Network requests for Firebase REST API
-requests==2.31.0
+requests==2.32.2
 
 # For SVG to PNG conversion
 cairosvg==2.7.1
