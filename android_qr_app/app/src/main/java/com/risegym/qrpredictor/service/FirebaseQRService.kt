@@ -30,6 +30,7 @@ class FirebaseQRService {
 
     data class QRCodeData(
         val svgContent: String,
+        val bitmapBase64: String?,
         val timestamp: Long,
         val timeSlot: String,
         val expiresAt: Long
@@ -38,6 +39,7 @@ class FirebaseQRService {
     data class FirebaseQREntry(
         val timestamp: String = "",
         val svgContent: String = "",
+        val bitmapBase64: String = "",
         val pattern: String = "",
         val uploadedAt: Long = 0L
     )
@@ -77,7 +79,8 @@ class FirebaseQRService {
                     
                     val qrData = QRCodeData(
                         svgContent = qrEntry.svgContent,
-                        timestamp = parseTimestamp(qrEntry.timestamp),
+                        bitmapBase64 = qrEntry.bitmapBase64.takeIf { it.isNotBlank() },
+                        timestamp = if (qrEntry.uploadedAt > 0) qrEntry.uploadedAt else parseTimestamp(qrEntry.timestamp),
                         timeSlot = timeSlot,
                         expiresAt = qrEntry.uploadedAt + 7200000 // 2 hours from upload
                     )
@@ -125,7 +128,8 @@ class FirebaseQRService {
                     
                     val qrData = QRCodeData(
                         svgContent = qrEntry.svgContent,
-                        timestamp = parseTimestamp(qrEntry.timestamp),
+                        bitmapBase64 = qrEntry.bitmapBase64.takeIf { it.isNotBlank() },
+                        timestamp = if (qrEntry.uploadedAt > 0) qrEntry.uploadedAt else parseTimestamp(qrEntry.timestamp),
                         timeSlot = timeSlot,
                         expiresAt = qrEntry.uploadedAt + 7200000
                     )
@@ -145,7 +149,105 @@ class FirebaseQRService {
     }
 
     /**
-     * Listen for real-time updates to QR codes
+     * Listen for real-time updates to the most recent QR code
+     */
+    fun observeMostRecentQRCode(): Flow<Result<QRCodeData>> = callbackFlow {
+        Log.d(TAG, "Starting real-time observation of most recent QR code")
+        
+        val listener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                try {
+                    // Calculate current time slot
+                    val calendar = java.util.Calendar.getInstance()
+                    calendar.timeZone = java.util.TimeZone.getTimeZone("America/New_York")
+                    val currentHour = calendar.get(java.util.Calendar.HOUR_OF_DAY)
+                    val currentTimeSlotHour = (currentHour / 2) * 2
+                    
+                    // Format timestamp for current time slot
+                    val dateFormat = java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.getDefault())
+                    dateFormat.timeZone = java.util.TimeZone.getTimeZone("America/New_York")
+                    val dateStr = dateFormat.format(calendar.time)
+                    val targetTimestamp = String.format("%s%02d0000", dateStr, currentTimeSlotHour)
+                    
+                    Log.d(TAG, "Looking for QR code for current time slot: $targetTimestamp (hour: $currentTimeSlotHour)")
+                    
+                    var currentSlotQR: QRCodeData? = null
+                    var mostRecentQR: QRCodeData? = null
+                    var mostRecentTimestamp = 0L
+                    
+                    for (child in snapshot.children) {
+                        val qrEntry = child.getValue(FirebaseQREntry::class.java) ?: continue
+                        
+                        if (qrEntry.svgContent.isNotBlank() || qrEntry.bitmapBase64.isNotBlank()) {
+                            val timestamp = parseTimestamp(qrEntry.timestamp)
+                            
+                            // Check if this is the current time slot QR
+                            if (qrEntry.timestamp == targetTimestamp) {
+                                val hour = qrEntry.pattern.substring(12, 14).toIntOrNull() ?: 0
+                                val slotStartHour = (hour / 2) * 2
+                                val slotEndHour = slotStartHour + 2 - 1
+                                val timeSlot = String.format("%d:00-%d:59", slotStartHour, slotEndHour)
+                                
+                                currentSlotQR = QRCodeData(
+                                    svgContent = qrEntry.svgContent,
+                                    bitmapBase64 = qrEntry.bitmapBase64.takeIf { it.isNotBlank() },
+                                    timestamp = if (qrEntry.uploadedAt > 0) qrEntry.uploadedAt else timestamp,
+                                    timeSlot = timeSlot,
+                                    expiresAt = qrEntry.uploadedAt + 7200000
+                                )
+                                Log.d(TAG, "Found QR for current time slot!")
+                                break
+                            }
+                            
+                            // Track most recent as fallback
+                            if (timestamp > mostRecentTimestamp) {
+                                mostRecentTimestamp = timestamp
+                                
+                                val hour = qrEntry.pattern.substring(12, 14).toIntOrNull() ?: 0
+                                val slotStartHour = (hour / 2) * 2
+                                val slotEndHour = slotStartHour + 2 - 1
+                                val timeSlot = String.format("%d:00-%d:59", slotStartHour, slotEndHour)
+                                
+                                mostRecentQR = QRCodeData(
+                                    svgContent = qrEntry.svgContent,
+                                    bitmapBase64 = qrEntry.bitmapBase64.takeIf { it.isNotBlank() },
+                                    timestamp = if (qrEntry.uploadedAt > 0) qrEntry.uploadedAt else timestamp,
+                                    timeSlot = timeSlot,
+                                    expiresAt = qrEntry.uploadedAt + 7200000
+                                )
+                            }
+                        }
+                    }
+                    
+                    // Prefer current time slot QR, fall back to most recent
+                    val qrToSend = currentSlotQR ?: mostRecentQR
+                    
+                    if (qrToSend != null) {
+                        Log.d(TAG, "Sending QR code: ${if (currentSlotQR != null) "Current time slot" else "Most recent fallback"}")
+                        trySend(Result.success(qrToSend))
+                    } else {
+                        trySend(Result.failure(Exception("No QR codes available")))
+                    }
+                } catch (e: Exception) {
+                    trySend(Result.failure(e))
+                }
+            }
+            
+            override fun onCancelled(error: DatabaseError) {
+                trySend(Result.failure(error.toException()))
+            }
+        }
+        
+        // Listen to changes in the qr_codes path
+        qrCodesRef.orderByKey().limitToLast(20).addValueEventListener(listener)
+        
+        awaitClose {
+            qrCodesRef.removeEventListener(listener)
+        }
+    }
+
+    /**
+     * Listen for real-time updates to QR codes (from /latest)
      */
     fun observeLatestQRCode(): Flow<Result<QRCodeData>> = callbackFlow {
         Log.d(TAG, "Starting real-time QR code observation")
@@ -169,7 +271,8 @@ class FirebaseQRService {
                         
                         val qrData = QRCodeData(
                             svgContent = qrEntry.svgContent,
-                            timestamp = parseTimestamp(qrEntry.timestamp),
+                            bitmapBase64 = qrEntry.bitmapBase64.takeIf { it.isNotBlank() },
+                            timestamp = if (qrEntry.uploadedAt > 0) qrEntry.uploadedAt else parseTimestamp(qrEntry.timestamp),
                             timeSlot = timeSlot,
                             expiresAt = qrEntry.uploadedAt + 7200000
                         )
@@ -224,7 +327,8 @@ class FirebaseQRService {
                             
                             val qrData = QRCodeData(
                                 svgContent = qrEntry.svgContent,
-                                timestamp = parseTimestamp(qrEntry.timestamp),
+                                bitmapBase64 = qrEntry.bitmapBase64.takeIf { it.isNotBlank() },
+                                timestamp = if (qrEntry.uploadedAt > 0) qrEntry.uploadedAt else parseTimestamp(qrEntry.timestamp),
                                 timeSlot = timeSlot,
                                 expiresAt = qrEntry.uploadedAt + 7200000
                             )
@@ -249,12 +353,111 @@ class FirebaseQRService {
      */
     private fun parseTimestamp(timestamp: String): Long {
         return try {
-            // Expected format: YYYYMMDDHHMMSS
-            // Convert to milliseconds
-            timestamp.toLongOrNull() ?: System.currentTimeMillis()
+            // Expected format: YYYYMMDDHHMMSS (e.g., 20250609072217)
+            if (timestamp.length == 14) {
+                val dateFormat = java.text.SimpleDateFormat("yyyyMMddHHmmss", java.util.Locale.getDefault())
+                dateFormat.timeZone = java.util.TimeZone.getTimeZone("America/New_York")
+                dateFormat.parse(timestamp)?.time ?: System.currentTimeMillis()
+            } else {
+                System.currentTimeMillis()
+            }
         } catch (e: Exception) {
+            Log.e(TAG, "Failed to parse timestamp: $timestamp", e)
             System.currentTimeMillis()
         }
+    }
+
+    /**
+     * Get the most recent QR code from the database
+     */
+    suspend fun getMostRecentQRCode(): Result<QRCodeData> = suspendCancellableCoroutine { continuation ->
+        Log.d(TAG, "Fetching most recent QR code")
+        
+        // Calculate current time slot
+        val calendar = java.util.Calendar.getInstance()
+        calendar.timeZone = java.util.TimeZone.getTimeZone("America/New_York")
+        val currentHour = calendar.get(java.util.Calendar.HOUR_OF_DAY)
+        val currentTimeSlotHour = (currentHour / 2) * 2
+        
+        // Format timestamp for current time slot
+        val dateFormat = java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.getDefault())
+        dateFormat.timeZone = java.util.TimeZone.getTimeZone("America/New_York")
+        val dateStr = dateFormat.format(calendar.time)
+        val targetTimestamp = String.format("%s%02d0000", dateStr, currentTimeSlotHour)
+        
+        Log.d(TAG, "Looking for QR code for current time slot: $targetTimestamp (hour: $currentTimeSlotHour)")
+        
+        // Query QR codes ordered by timestamp, limited to last 20
+        qrCodesRef.orderByKey().limitToLast(20).addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                try {
+                    var currentSlotQR: QRCodeData? = null
+                    var mostRecentQR: QRCodeData? = null
+                    var mostRecentTimestamp = 0L
+                    
+                    for (child in snapshot.children) {
+                        val qrEntry = child.getValue(FirebaseQREntry::class.java) ?: continue
+                        
+                        if (qrEntry.svgContent.isNotBlank() || qrEntry.bitmapBase64.isNotBlank()) {
+                            val timestamp = parseTimestamp(qrEntry.timestamp)
+                            
+                            // Check if this is the current time slot QR
+                            if (qrEntry.timestamp == targetTimestamp) {
+                                val hour = qrEntry.pattern.substring(12, 14).toIntOrNull() ?: 0
+                                val slotStartHour = (hour / 2) * 2
+                                val slotEndHour = slotStartHour + 2 - 1
+                                val timeSlot = String.format("%d:00-%d:59", slotStartHour, slotEndHour)
+                                
+                                currentSlotQR = QRCodeData(
+                                    svgContent = qrEntry.svgContent,
+                                    bitmapBase64 = qrEntry.bitmapBase64.takeIf { it.isNotBlank() },
+                                    timestamp = if (qrEntry.uploadedAt > 0) qrEntry.uploadedAt else timestamp,
+                                    timeSlot = timeSlot,
+                                    expiresAt = qrEntry.uploadedAt + 7200000
+                                )
+                                Log.d(TAG, "Found QR for current time slot!")
+                                break
+                            }
+                            
+                            // Track most recent as fallback
+                            if (timestamp > mostRecentTimestamp) {
+                                mostRecentTimestamp = timestamp
+                                
+                                val hour = qrEntry.pattern.substring(12, 14).toIntOrNull() ?: 0
+                                val slotStartHour = (hour / 2) * 2
+                                val slotEndHour = slotStartHour + 2 - 1
+                                val timeSlot = String.format("%d:00-%d:59", slotStartHour, slotEndHour)
+                                
+                                mostRecentQR = QRCodeData(
+                                    svgContent = qrEntry.svgContent,
+                                    bitmapBase64 = qrEntry.bitmapBase64.takeIf { it.isNotBlank() },
+                                    timestamp = if (qrEntry.uploadedAt > 0) qrEntry.uploadedAt else timestamp,
+                                    timeSlot = timeSlot,
+                                    expiresAt = qrEntry.uploadedAt + 7200000
+                                )
+                            }
+                        }
+                    }
+                    
+                    // Prefer current time slot QR, fall back to most recent
+                    val qrToReturn = currentSlotQR ?: mostRecentQR
+                    
+                    if (qrToReturn != null) {
+                        Log.d(TAG, "Returning QR code: ${if (currentSlotQR != null) "Current time slot" else "Most recent fallback"}")
+                        continuation.resume(Result.success(qrToReturn))
+                    } else {
+                        continuation.resume(Result.failure(Exception("No QR codes found")))
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error finding most recent QR", e)
+                    continuation.resume(Result.failure(e))
+                }
+            }
+            
+            override fun onCancelled(error: DatabaseError) {
+                continuation.resume(Result.failure(error.toException()))
+            }
+        })
     }
 
     /**
@@ -290,7 +493,8 @@ class FirebaseQRService {
                             
                             val qrData = QRCodeData(
                                 svgContent = qrEntry.svgContent,
-                                timestamp = parseTimestamp(qrEntry.timestamp),
+                                bitmapBase64 = qrEntry.bitmapBase64.takeIf { it.isNotBlank() },
+                                timestamp = if (qrEntry.uploadedAt > 0) qrEntry.uploadedAt else parseTimestamp(qrEntry.timestamp),
                                 timeSlot = timeSlot,
                                 expiresAt = qrEntry.uploadedAt + 7200000
                             )
@@ -327,7 +531,8 @@ class FirebaseQRService {
                             
                             val qrData = QRCodeData(
                                 svgContent = qrEntry.svgContent,
-                                timestamp = parseTimestamp(qrEntry.timestamp),
+                                bitmapBase64 = qrEntry.bitmapBase64.takeIf { it.isNotBlank() },
+                                timestamp = if (qrEntry.uploadedAt > 0) qrEntry.uploadedAt else parseTimestamp(qrEntry.timestamp),
                                 timeSlot = timeSlot,
                                 expiresAt = qrEntry.uploadedAt + 7200000
                             )

@@ -1,8 +1,10 @@
 package com.risegym.qrpredictor
 
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.provider.Settings
+import android.util.Base64
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -126,18 +128,32 @@ fun QRPredictorScreen() {
         errorMessage = null
         
         try {
-            val result = firebaseService.getCurrentTimeSlotQRCode()
+            val result = firebaseService.getMostRecentQRCode()
             
             result.fold(
                 onSuccess = { qrData ->
                     Log.d("MainActivity", "Successfully fetched QR from Firebase")
                     
-                    val bitmap = SVGUtils.parseSVGToBitmap(qrData.svgContent, 800)
+                    val bitmap = if (!qrData.bitmapBase64.isNullOrBlank()) {
+                        // Use base64 PNG if available
+                        try {
+                            val decodedBytes = Base64.decode(qrData.bitmapBase64, Base64.DEFAULT)
+                            BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.size)
+                        } catch (e: Exception) {
+                            Log.e("MainActivity", "Failed to decode base64 PNG, falling back to SVG", e)
+                            SVGUtils.parseSVGToBitmap(qrData.svgContent, 800)
+                        }
+                    } else {
+                        // Fall back to SVG
+                        SVGUtils.parseSVGToBitmap(qrData.svgContent, 800)
+                    }
+                    
                     if (bitmap != null) {
                         qrBitmap?.recycle()
                         qrBitmap = bitmap
                         timeSlot = qrData.timeSlot
                         lastUpdateTime = qrData.timestamp
+                        Log.d("MainActivity", "QR timestamp: ${qrData.timestamp}, Date: ${Date(qrData.timestamp)}")
                     } else {
                         errorMessage = "Failed to parse QR code"
                     }
@@ -174,18 +190,32 @@ fun QRPredictorScreen() {
     
     // Listen for real-time updates from Firebase
     LaunchedEffect(Unit) {
-        firebaseService.observeLatestQRCode().collect { result ->
+        firebaseService.observeMostRecentQRCode().collect { result ->
             result.fold(
                 onSuccess = { qrData ->
                     Log.d("MainActivity", "Received real-time QR update from Firebase")
                     
-                    val bitmap = SVGUtils.parseSVGToBitmap(qrData.svgContent, 800)
+                    val bitmap = if (!qrData.bitmapBase64.isNullOrBlank()) {
+                        // Use base64 PNG if available
+                        try {
+                            val decodedBytes = Base64.decode(qrData.bitmapBase64, Base64.DEFAULT)
+                            BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.size)
+                        } catch (e: Exception) {
+                            Log.e("MainActivity", "Failed to decode base64 PNG, falling back to SVG", e)
+                            SVGUtils.parseSVGToBitmap(qrData.svgContent, 800)
+                        }
+                    } else {
+                        // Fall back to SVG
+                        SVGUtils.parseSVGToBitmap(qrData.svgContent, 800)
+                    }
+                    
                     if (bitmap != null) {
                         qrBitmap?.recycle()
                         qrBitmap = bitmap
                         timeSlot = qrData.timeSlot
                         lastUpdateTime = qrData.timestamp
                         errorMessage = null
+                        Log.d("MainActivity", "Real-time QR timestamp: ${qrData.timestamp}, Date: ${Date(qrData.timestamp)}")
                     } else {
                         errorMessage = "Failed to parse QR code"
                     }
@@ -410,12 +440,27 @@ fun QRPredictorScreen() {
             
             // Last update info
             if (lastUpdateTime > 0) {
+                val currentTime = System.currentTimeMillis()
+                val timeDiff = currentTime - lastUpdateTime
+                val displayText = if (timeDiff < 60000) { // Less than 1 minute
+                    "Last updated: just now"
+                } else if (timeDiff < 3600000) { // Less than 1 hour
+                    val minutes = timeDiff / 60000
+                    "Last updated: $minutes minute${if (minutes > 1) "s" else ""} ago"
+                } else {
+                    val dateFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
+                    "Last updated: ${dateFormat.format(Date(lastUpdateTime))}"
+                }
+                
                 Text(
-                    text = "Last updated: ${SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date(lastUpdateTime))}",
+                    text = displayText,
                     fontSize = 12.sp,
                     color = Color(0xFF666666),
                     modifier = Modifier.padding(top = 8.dp)
                 )
+                
+                // Debug info
+                Log.d("MainActivity", "Last update timestamp: $lastUpdateTime (${Date(lastUpdateTime)})")
             }
         }
     }
