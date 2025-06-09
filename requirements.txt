@@ -10,5 +10,5 @@ Pillow==10.3.0
 # Network requests for Firebase REST API
 requests==2.31.0
 
-# Optional: For SVG to PNG conversion if needed
-# cairosvg==2.7.1
+# For SVG to PNG conversion
+cairosvg==2.7.1
