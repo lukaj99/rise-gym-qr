@@ -1,6 +1,12 @@
 {
-  "generated": "2025-06-12T07:00:00.979116Z",
+  "generated": "2025-06-12T07:28:15.080276Z",
   "qr_codes": [
+    {
+      "filename": "20250612072814.svg",
+      "timestamp": "20250612072814",
+      "size": 16756,
+      "url": "https://raw.githubusercontent.com/lukaj99/rise-gym-qr/master/real_qr_codes/20250612072814.svg"
+    },
     {
       "filename": "20250612070000.svg",
       "timestamp": "20250612070000",
